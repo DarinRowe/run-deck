@@ -2,6 +2,16 @@
 
 Validated on 2026-09-24 and 2026-09-25 (America/Los_Angeles), macOS, Muxy 1.6.0, Node 22.22.2, npm 10.9.7. Dated checkpoints identify the source/build they cover. The published v0.1.0 package is the earlier command launchpad.
 
+## 0.2.0 release verification — 2026-09-25
+
+Runtime commit `f006a29c2a13601a852e81cc1cdd1a873ee94f6e` passed `npm ci && npm run check`: **140 tests**, no failures or skips on macOS, production build, and the 12-file distribution check (**80.1 KiB HTML/JS/CSS**). Muxy reloaded the enabled 0.2.0 extension from this checkout's `dist/`. The tested JavaScript is `index-z4GCEM64.js`, SHA-256 `34742c35166977a8e9bf69a187f617fe0c56e6cf70500efcd5bf222ea0958ff7`; CSS is `index-BrTUVwqA.css`, SHA-256 `2ffcf0e5353353412bd9f79b330b7a2380cdfbc27cd2427d742579b217608eb2`. Later release-evidence edits do not change the runtime bundle.
+
+Release smoke testing found a real shutdown race: after TERM to a parent, its worker briefly appeared as a zombie with a changed `comm`, causing the stop script to return 72 even though the tree was exiting. The unmodified script failed eight consecutive reproductions; a new native regression also failed before the fix. Post-signal rechecks now skip missing/zombie processes without signalling them. Initial host/membership/identity/port checks remain strict, and changed live identities still abort. All eight repetitions passed after the fix, alongside the native wrong-identity and occupied-port rejection tests.
+
+The final native Muxy flow used a temporary two-port HTTP server with a worker that handles parent-initiated shutdown. Start created one three-member row (PIDs 92355/92356/92359, ports 61991/61992); Details showed individual resources, interactive stdin echoed correctly, Terminal selected its exact tab, and Open displayed its response in Muxy's browser. Restart removed all three PIDs and both listeners before replacement-start consent. Exactly one replacement tree appeared (94099/94126/94127, ports 62227/62228). Stop ended that entire tree successfully. The consent scripts visibly contained the new zombie check, tying the native behavior to the rebuilt runtime.
+
+Independent `ps`/`lsof` checks confirmed all nine PIDs and six ports from the initial failed attempt and final flow were gone. All three temporary terminals, two browser tabs, the saved smoke command, and temporary helper files were removed. The three pre-existing Run Deck terminals, `dev` command, and unrelated port 5193 service remained intact. The project selection was returned to PrintAnvil. The previous checkpoint's UI and observation tests remain separately scoped below; this release reran automated coverage and the affected native lifecycle flow, not the WebKit memory soak.
+
 ## Follow-up joint review — 2026-09-25
 
 The [follow-up review](review-followup-2026-09-25.md) preserved the existing repairs and fixed additional stale-confirmation, scan/action, foreground scheduling, discovery cancellation, and SVG visibility defects. The final **139-test** suite, native process integrations, production build, and browser regressions passed. The bundle is `index-BbqimWpD.js` (SHA-256 `e6a05b0f4b4905341154c182eec8c834089f0f25b9103dd9efef8f09c49c8fcc`).
@@ -16,7 +26,7 @@ Native Muxy loaded `index-z7cT3XVH.js` from this checkout's enabled `dist/` inst
 
 ## Automated checks
 
-`npm run check`: **139 tests passed** at the latest checkpoint above; the preceding joint review passed 124 and association-consistency checkpoint below passed 104. None were skipped on macOS; production build and distribution assertions passed. Source/test whitespace checks passed. The earlier 82-test performance checkpoint retains its separate [source hashes and logs](performance-reaudit/lifecycle.md).
+`npm run check`: **140 tests passed** at the release checkpoint above; the preceding follow-up review passed 139, joint review passed 124, and association-consistency checkpoint below passed 104. None were skipped on macOS; production build and distribution assertions passed. Source/test whitespace checks passed. The earlier 82-test performance checkpoint retains its separate [source hashes and logs](performance-reaudit/lifecycle.md).
 
 - Native integration starts disposable multiport servers and tagged worker trees. Actual shell commands reject incorrect boot/start/executable/port identities and incomplete descendant membership. A verified tree stops, a guarded replacement starts with fresh identities, and another launch is refused while its port is occupied. Cleanup targets only test-owned processes.
 - A real shell test verifies the launch wrapper preserves stdin for interactive commands.
@@ -28,7 +38,7 @@ Native Muxy loaded `index-z7cT3XVH.js` from this checkout's enabled `dist/` inst
 
 Distribution at the association-consistency checkpoint: 12 files; **78.7 KiB HTML/JavaScript/CSS**. No runtime npm dependencies, background extension script, test harness, source maps, or Python files are included. Screenshots are copied as listing assets.
 
-CI defines Node 20.19/22/24 checks plus a macOS integration job. These changed workflows have not been run remotely for this revision. Marketplace validation completed for the earlier launchpad does not validate this dashboard; a release must repeat the packaging and marketplace checks in `RELEASE.md`.
+CI defines Node 20.19/22/24 checks plus a macOS integration job. Publication requires successful checks for the final PR head and merged commit; their run records are available in [GitHub Actions](https://github.com/DarinRowe/run-deck/actions/workflows/ci.yml). Marketplace validation completed for the earlier launchpad does not validate this dashboard. GitHub ZIP packaging follows `RELEASE.md`; a future marketplace submission requires its separate validation and approval.
 
 ## Follow-up correctness review
 
