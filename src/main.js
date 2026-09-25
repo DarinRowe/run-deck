@@ -3,7 +3,7 @@ import { ForegroundChecks } from './observation.js';
 import { ServiceMonitor } from './services.js';
 import { Launchpad } from './controller.js';
 import { terminalState, matchingCommand, sameContext } from './model.js';
-import { dictionaries } from './i18n.js';
+import { dictionaries, languages, languageTags } from './i18n.js';
 
 const root = document.querySelector('#app');
 const api = window.muxy;
@@ -55,6 +55,7 @@ function button(label, action, className = '') {
     Promise.resolve().then(action).catch(showError).finally(() => {
       activeActions--; live.setHeld(!!activeActions || !!dialog);
       lastFocusRefresh = Date.now();
+      render(true);
     });
   });
   return node;
@@ -90,19 +91,36 @@ async function confirm(title, message, action) {
 async function refresh() {
   await live.refresh();
 }
-function refreshSoon() {
-  live.invalidate(1000);
+async function refreshLaunch(entry, context) {
+  if (!entry?.run?.token) return;
+  const current = () => !disposed && !document.hidden && sameContext(context, commands.context);
+  // This is completion of the user's launch, like an explicit Refresh. Opening
+  // its terminal can take focus without hiding the docked panel. Do not route
+  // this check through focus-gated automatic polling or cancel it on consent.
+  for (const delay of [0, 500, 1000, 2000]) {
+    if (delay) await new Promise(resolve => setTimeout(resolve, delay));
+    if (!current()) return;
+    await live.refresh();
+    if (!current()) return;
+    render(true);
+    if (monitor.state.status !== 'ready' || monitor.state.services.some(service => service.source?.token === entry.run.token)) return;
+  }
 }
 
 const shell = el('main', 'shell');
 shell.setAttribute('aria-label', 'Run Deck');
 const header = el('header', 'header');
 const startButton = button('', openStarter, 'secondary');
-const languageButton = button('', () => {
-  language = language === 'en' ? 'zh' : 'en';
+const languageButton = el('select', 'language');
+for (const [code, name] of Object.entries(languages)) {
+  const option = el('option', '', name); option.value = code; languageButton.append(option);
+}
+languageButton.value = language;
+languageButton.addEventListener('change', () => {
+  language = languageButton.value;
   try { localStorage.setItem('run-deck-language', language); } catch {}
   render();
-}, 'quiet language');
+});
 header.append(startButton, languageButton);
 const sectionHead = el('div', 'section-head');
 const headingGroup = el('div', 'heading-group');
@@ -110,7 +128,6 @@ const heading = el('h1');
 headingGroup.append(heading);
 const refreshButton = button('', refresh, 'quiet refresh');
 refreshButton.append(refreshIcon());
-const refreshLabel = el('span'); refreshButton.append(refreshLabel);
 const sectionActions = el('div', 'section-actions');
 const sort = el('select', 'sort');
 for (const value of ['project', 'cpu', 'memory']) {
@@ -144,7 +161,12 @@ const overviewParts = [];
 for (const key of ['servicesTotal', 'cpuTotal', 'memoryTotal']) {
   const tile = el('div', 'overview-item');
   const label = el('span'); const value = el('strong');
-  tile.append(label, value); overview.append(tile); overviewParts.push({ key, label, value });
+  let number, unit;
+  if (key === 'memoryTotal') {
+    number = el('span'); unit = el('small', 'memory-unit');
+    value.append(number, document.createTextNode(' '), unit);
+  }
+  tile.append(label, value); overview.append(tile); overviewParts.push({ key, label, value, number, unit });
 }
 const liveHint = el('p', 'live-hint');
 search.addEventListener('input', () => { query = search.value.trim().toLowerCase(); render(); });
@@ -219,7 +241,7 @@ function makeCard(id) {
   const info = el('div', 'service-info');
   const nameRow = el('div', 'service-name');
   const name = el('h3'); const projectTag = el('span', 'project-tag');
-  nameRow.append(name, projectTag);
+  nameRow.append(statusDot, name, projectTag);
   const address = el('p', 'service-address');
   const resources = el('p', 'service-resources');
   const cpu = el('span', 'resource'); const memory = el('span', 'resource');
@@ -240,10 +262,13 @@ function makeCard(id) {
   const terminal = button('', () => monitor.terminal(id), 'quiet terminal');
   const restart = button('', async () => {
     const result = await monitor.restart(id, confirmOutside);
-    if (result?.outcome) { announce(t(result.outcome)); refreshSoon(); }
+    if (result?.outcome) {
+      announce(t(result.outcome));
+      await refreshLaunch(commands.entries.find(entry => entry.id === result.entryId), commands.context);
+    }
   }, 'quiet restart');
   actions.append(open, terminal, restart, stop);
-  row.append(statusDot, info, actions);
+  row.append(info, actions);
   const detail = el('details', 'service-details');
   const summary = el('summary', '', '···');
   detail.append(summary);
@@ -379,10 +404,13 @@ function renderCards(services) {
     const memory = memoryLabel(service.memoryBytes);
     const highestCPU = !stale && service.restriction !== 'protected' && topCPU > 0 && service.cpuPercent === topCPU;
     const highestMemory = !stale && service.restriction !== 'protected' && topMemory > 0 && service.memoryBytes === topMemory;
-    text(p.cpu, `${t(highestCPU ? 'topCPU' : 'cpu')} ${cpuLabel}`);
-    text(p.memory, `${t(highestMemory ? 'topMemory' : 'memory')} ${memory}`);
+    text(p.cpu, `${t('cpu')} ${cpuLabel}`);
+    text(p.memory, `${t('memory')} ${memory}`);
     p.cpu.classList.toggle('highest', highestCPU); p.memory.classList.toggle('highest', highestMemory);
-    attribute(p.cpu, 'title', t('cpuHint')); attribute(p.memory, 'title', t('memoryHint'));
+    attribute(p.cpu, 'title', `${highestCPU ? t('topCPU') + ' · ' : ''}${t('cpuHint')}`);
+    attribute(p.memory, 'title', `${highestMemory ? t('topMemory') + ' · ' : ''}${t('memoryHint')}`);
+    attribute(p.cpu, 'aria-label', `${t(highestCPU ? 'topCPU' : 'cpu')} ${cpuLabel}`);
+    attribute(p.memory, 'aria-label', `${t(highestMemory ? 'topMemory' : 'memory')} ${memory}`);
     const sourceName = service.source?.entryId ? 'Run Deck' : service.source?.name;
     const processCount = `${service.members.length} ${t(service.members.length === 1 ? 'oneProcess' : 'manyProcesses')}`;
     text(p.source, [sourceName, service.members.length > 1 ? processCount : null].filter(Boolean).join(' · '));
@@ -396,9 +424,9 @@ function renderCards(services) {
     property(p.alerts, 'hidden', !service.alerts?.length || stale);
     card.classList.toggle('needs-attention', !!service.alerts?.length && !stale);
     const samples = service.samples || [];
-    // SVG does not reflect the HTML hidden property into an attribute.
+    // Reserve the trend slot while history warms up or resets; metrics must not move actions.
     const hideTrend = samples.length < 2 || samples.some(s => s.cpu == null);
-    if (p.trend.hasAttribute('hidden') !== hideTrend) p.trend.toggleAttribute('hidden', hideTrend);
+    p.trend.classList.toggle('warming-up', hideTrend);
     const maximum = Math.max(100, ...samples.map(s => s.cpu || 0));
     attribute(p.line, 'points', samples.map((s,i) => `${i * 96 / Math.max(1,samples.length-1)},${22 - (s.cpu || 0) / maximum * 20}`).join(' '));
     text(p.terminal, t('terminalShort')); property(p.terminal, 'hidden', !terminalAvailable);
@@ -422,16 +450,18 @@ function renderCards(services) {
   }
   if (recoverFocus) { heading.tabIndex = -1; heading.focus(); }
 }
-function render() {
-  if (disposed || document.hidden || !panelVisible) return;
+function render(afterAction = false) {
+  if (disposed || document.hidden || (!panelVisible && !afterAction)) return;
   const state = monitor?.state;
   const services = [...(state?.services || [])];
   const sortField = sortOrder === 'cpu' ? 'cpuPercent' : sortOrder === 'memory' ? 'memoryBytes' : null;
   if (sortField) services.sort((a, b) => (b[sortField] ?? -1) - (a[sortField] ?? -1));
   const normal = services.filter(service => service.restriction !== 'protected');
   const protectedCount = services.length - normal.length;
-  document.documentElement.lang = language === 'zh' ? 'zh-CN' : 'en';
-  text(startButton, t('startCommand')); text(languageButton, t('language'));
+  document.documentElement.lang = languageTags[language];
+  text(startButton, t('startCommand'));
+  attribute(languageButton, 'aria-label', t('language'));
+  attribute(languageButton, 'title', t('language'));
   languageButton.disabled = !!dialog;
   startButton.disabled = !api || !!dialog;
   text(heading, t('running'));
@@ -439,7 +469,14 @@ function render() {
   const totalCPU = sum('cpuPercent'); const totalMemory = sum('memoryBytes');
   const values = [String(normal.length), totalCPU == null ? '—' : `${totalCPU.toFixed(1)}%`, totalMemory == null ? '—' : `≈ ${memoryLabel(totalMemory)}`];
   for (const [i, part] of overviewParts.entries()) {
-    text(part.label, t(part.key)); text(part.value, state?.checkedAt ? values[i] : '—');
+    text(part.label, t(part.key));
+    const value = state?.checkedAt ? values[i] : '—';
+    if (part.unit) {
+      const match = value.match(/^(.*) (MB|GB)$/);
+      text(part.number, match ? match[1] : value);
+      text(part.unit, match ? match[2] : '');
+      property(part.unit, 'hidden', !match);
+    } else text(part.value, value);
   }
   overview.classList.toggle('is-stale', state?.status !== 'ready');
   const attention = normal.filter(s => s.alerts?.length).length;
@@ -455,7 +492,9 @@ function render() {
   text(liveHint, t('liveInterrupted'));
   liveHint.hidden = !live.interrupted || !api;
 
-  text(refreshLabel, t(state?.checking ? 'refreshing' : 'refresh'));
+  attribute(refreshButton, 'aria-label', t(state?.checking ? 'refreshing' : 'refresh'));
+  attribute(refreshButton, 'title', t(state?.checking ? 'refreshing' : 'refresh'));
+  attribute(refreshButton, 'aria-busy', String(!!state?.checking));
   refreshButton.disabled = !api || state?.status === 'loading' || monitor?.stopping;
   sort.setAttribute('aria-label', t('sort'));
   sort.title = t('sort'); sort.hidden = services.length < 2;
@@ -496,7 +535,8 @@ function openStarter() {
   activeDialog.setAttribute('aria-labelledby', heading.id);
   const scope = el('div', 'starter-scope');
   const project = el('strong'); const path = el('code', 'muted'); scope.append(project, path);
-  const hint = el('p', 'small muted', t('commandHint'));
+  const location = el('details', 'options starter-location'); location.hidden = true;
+  location.append(el('summary', '', t('workingDirectory')), scope);
   const loading = el('p', 'discovery-status small muted', t('scriptsLoading')); loading.setAttribute('role', 'status');
   const retry = button(t('retryScripts'), () => { void discover(); }); retry.hidden = true;
   const projects = el('section', 'command-section project-commands');
@@ -519,9 +559,9 @@ function openStarter() {
   const submit = el('button', 'primary', t('launchCustom')); submit.type = 'submit'; submit.disabled = true;
   fields.append(field(t('command'), command), advanced, submit); form.append(fields); custom.append(form);
   const formError = el('p', 'error'); formError.hidden = true; formError.tabIndex = -1; formError.setAttribute('role', 'alert');
-  const actions = el('div', 'form-actions');
-  const close = button(t('close'), () => { if (!starting) activeDialog.close(); }); actions.append(close);
-  activeDialog.append(heading, scope, hint, loading, retry, projects, saved, scripts, custom, formError, actions);
+  const actions = el('header', 'starter-header');
+  const close = button(t('close'), () => { if (!starting) activeDialog.close(); }, 'quiet starter-close'); actions.append(heading, close);
+  activeDialog.append(actions, loading, retry, projects, saved, scripts, custom, location, formError);
   root.append(activeDialog);
   activeDialog.addEventListener('cancel', event => { if (starting) event.preventDefault(); else discovery.abort(); });
   activeDialog.addEventListener('click', event => {
@@ -535,7 +575,7 @@ function openStarter() {
   activeDialog.addEventListener('close', () => {
     discovery.abort(); activeDialog.remove();
     if (dialog === activeDialog) dialog = null;
-    live.setHeld(!!activeActions); render(); startButton.focus();
+    live.setHeld(!!activeActions); render(true); startButton.focus();
   });
   activeDialog.showModal(); heading.focus(); live.setHeld(true); render();
 
@@ -568,17 +608,25 @@ function openStarter() {
     const result = await commands.start(input, context);
     if (!result) return;
     activeDialog.close();
-    if (result.action === 'launch') { announce(t('launched')); refreshSoon(); }
+    if (result.action === 'launch') {
+      announce(t('launched'));
+      await refreshLaunch(result.entry, context);
+    }
   }
   function commandRow(input, entry, primary = false) {
     const row = el('div', 'command-row');
     const copy = el('div', 'command-copy');
     const title = el('div', 'command-title'); title.append(el('strong', '', input.name));
     const state = entry ? terminalState(entry, commands.tabs) : 'ready';
-    if (entry) title.append(el('span', 'command-tag', t(entry.run ? state === 'open' ? 'linked' : 'reviewTerminal' : 'saved')));
-    copy.append(title, el('code', 'command-line', input.command));
-    if (input.detail) copy.append(el('p', 'script-detail muted', input.detail));
-    copy.append(el('p', 'command-directory muted', `${t('directory')}: ${input.directory === '.' ? t('projectRoot') : input.directory}`));
+    if (entry?.run && state !== 'open') title.append(el('span', 'command-tag', t('reviewTerminal')));
+    copy.append(title);
+    if (input.detail) {
+      const script = el('details', 'command-script');
+      const summary = el('summary'); summary.append(el('code', '', input.command));
+      summary.setAttribute('aria-label', t('scriptDetails', { name: input.name, command: input.command }));
+      script.append(summary, el('p', 'script-detail muted', input.detail)); copy.append(script);
+    } else copy.append(el('code', 'command-line', input.command));
+    if (input.directory && input.directory !== '.') copy.append(el('p', 'command-directory muted', `${t('directory')}: ${input.directory}`));
     const action = button(t(state === 'open' ? 'terminalShort' : input.kind === 'task' ? 'runTask' : 'launch'), () => act(() => start(input), action), primary && state === 'ready' ? 'primary' : '');
     action.setAttribute('aria-label', `${action.textContent} ${input.name}`);
     if (entry?.run && state !== 'open') { action.dataset.blocked = 'true'; action.disabled = true; }
@@ -638,6 +686,7 @@ function openStarter() {
       if (!current()) return;
       context = { ...commands.context };
       text(project, `${context.name}${context.branch ? ` · ${context.branch}` : ''}`); text(path, context.path);
+      location.hidden = false;
       renderChoices();
       await discover();
     } catch (error) {

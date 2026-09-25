@@ -1,4 +1,8 @@
 import { createServer } from 'node:http';
+import { spawn } from 'node:child_process';
+
+// Optional disposable worker exercises descendant discovery and tree shutdown.
+if (process.argv.includes('--worker')) spawn(process.execPath, ['-e', 'console.log(`Worker PID: ${process.pid}`); setInterval(() => {}, 1000)'], { stdio: 'inherit' });
 
 // Start this through Run Deck to verify the real Muxy terminal and service flow.
 // Port 0 allocates a free loopback port; all resources belong to this process.

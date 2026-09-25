@@ -1,5 +1,5 @@
 # Run Deck development
 
-- **Native verification:** Before changing panel UI, Muxy integration, runtime behavior, or the extension manifest, read [docs/MUXY-DEVELOPMENT.md](docs/MUXY-DEVELOPMENT.md). Complete its build → load/reload → affected-flow → cleanup criteria before reporting the change ready. Use available native-app tools to perform the workflow; record the exact blocked step when the host cannot be reached. Documentation-only changes need link and instruction validation.
-- **Architecture:** For process inspection, signalling, persistence, or worktree changes, read the invariants in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) before editing.
+- **Development:** Before changing panel UI, Muxy integration, runtime behavior, or the manifest, follow [MUXY-DEVELOPMENT.md](docs/MUXY-DEVELOPMENT.md) from contract lookup through native verification and cleanup. Report readiness only when its completion criteria pass; identify the exact blocked step otherwise. Documentation-only changes need link and instruction validation.
+- **Architecture:** Before changing process inspection/signalling, asynchronous state/lifecycle, persistence, or worktree handling, read the [invariants](docs/ARCHITECTURE.md#invariants) and affected module's contract in the same document.
 - **Release:** When publishing a version, follow [RELEASE.md](RELEASE.md) after development verification.
