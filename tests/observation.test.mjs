@@ -122,3 +122,29 @@ test('three observed replacements trigger an inline warning; deliberate reset cl
   }
   history.forget(item, 'host'); assert.deepEqual(history.observe(item, 'host', 20000).alerts, []);
 });
+test('sustained hints tolerate the inspection duration added to each five-second interval', () => {
+  for (const interval of [5900, 9000]) {
+    const history = new ServiceHistory();
+    const count = Math.ceil(30000 / interval);
+    for (let i = 0; i <= count; i++) {
+      const result = history.observe(service({ memoryBytes: (200 + i * 40) * 1024 * 1024 }), 'host', i * interval);
+      assert.deepEqual(result.alerts, i === count ? ['highCPU', 'memoryGrowth'] : [], `interval=${interval}, observation=${i}`);
+    }
+  }
+});
+test('nonuniform windows still reject brief peaks, missing readings, and interrupted observation', () => {
+  for (const interval of [5900, 9000]) {
+    const count = Math.ceil(30000 / interval);
+    for (const scenario of ['peak', 'missing', 'gap']) {
+      const history = new ServiceHistory();
+      for (let i = 0; i <= count; i++) {
+        const metrics = { cpuPercent: 90, memoryBytes: (200 + i * 40) * 1024 * 1024 };
+        if (scenario === 'peak' && i < count) metrics.cpuPercent = 5;
+        if (scenario === 'peak') metrics.memoryBytes = 200 * 1024 * 1024;
+        if (scenario === 'missing' && i === count - 1) { metrics.cpuPercent = null; metrics.memoryBytes = null; }
+        const time = i * interval + (scenario === 'gap' && i === count ? 16000 : 0);
+        assert.deepEqual(history.observe(service(metrics), 'host', time).alerts, [], `${scenario}, interval=${interval}, observation=${i}`);
+      }
+    }
+  }
+});

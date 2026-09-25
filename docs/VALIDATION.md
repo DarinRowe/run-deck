@@ -1,10 +1,22 @@
 # Validation — Service dashboard
 
-Validated on 2026-09-24 (America/Los_Angeles), macOS, Muxy 1.6.0, Node 22.22.2, npm 10.9.7. This records the current source changes. The published v0.1.0 package is the earlier command launchpad.
+Validated on 2026-09-24 and 2026-09-25 (America/Los_Angeles), macOS, Muxy 1.6.0, Node 22.22.2, npm 10.9.7. Dated checkpoints identify the source/build they cover. The published v0.1.0 package is the earlier command launchpad.
+
+## Follow-up joint review — 2026-09-25
+
+The [follow-up review](review-followup-2026-09-25.md) preserved the existing repairs and fixed additional stale-confirmation, scan/action, foreground scheduling, discovery cancellation, and SVG visibility defects. The final **139-test** suite, native process integrations, production build, and browser regressions passed. The bundle is `index-BbqimWpD.js` (SHA-256 `e6a05b0f4b4905341154c182eec8c834089f0f25b9103dd9efef8f09c49c8fcc`).
+
+Muxy loaded that build from this checkout's `dist/`. The temporary command `Review followup 0925` completed Start → Terminal → Open, cancelled Restart → Refresh recovery, successful Restart → Terminal → Stop. Old PIDs 63461/63462 and port 59596 exited before replacement PIDs 65108/65129 and port 59856 started. All four PIDs/listeners, the temporary command, two terminals, browser tab, and isolated preview server were cleaned up. Search/live mode and the original terminal were restored. The report records performance, memory, and native-vs-adapter coverage limits.
+
+## Joint logic and memory review — 2026-09-25
+
+The [preceding review](review-2026-09-25.md) fixed six reproducible history, URL, and persistence races with 20 new regression cases. **124 tests passed**, including native process integration, build, and distribution checks. The production preview passed simultaneous URL form saves, same-port/different-address histories, actual-cadence alerts, unchanged-DOM/hidden-work assertions, and pending-launch protection. No new UI retention or WebKit peak reduction was established.
+
+Native Muxy loaded `index-z7cT3XVH.js` from this checkout's enabled `dist/` installation. Test command `Review 0925 0008` completed Start → Terminal → Open → Stop using PIDs 48831/48832 and port 57468. After Forget, cancelling another startup left the saved command blocked for review with no extra terminal. The command and test tabs were removed, the original terminal restored, and those PIDs/listener independently verified gone. The report records hashes, performance numbers, adapter-vs-native coverage, and the separate cleanup exception: diagnostic helper PID 47153 remained in OS state UE after TERM/KILL; its temporary executable copies were removed.
 
 ## Automated checks
 
-`npm run check`: **98 tests passed** at the follow-up correctness-review checkpoint, none skipped on macOS; production build and distribution assertions passed. `git diff --check` passed. The earlier 82-test performance checkpoint retains its separate [source hashes and logs](performance-reaudit/lifecycle.md).
+`npm run check`: **139 tests passed** at the latest checkpoint above; the preceding joint review passed 124 and association-consistency checkpoint below passed 104. None were skipped on macOS; production build and distribution assertions passed. Source/test whitespace checks passed. The earlier 82-test performance checkpoint retains its separate [source hashes and logs](performance-reaudit/lifecycle.md).
 
 - Native integration starts disposable multiport servers and tagged worker trees. Actual shell commands reject incorrect boot/start/executable/port identities and incomplete descendant membership. A verified tree stops, a guarded replacement starts with fresh identities, and another launch is refused while its port is occupied. Cleanup targets only test-owned processes.
 - A real shell test verifies the launch wrapper preserves stdin for interactive commands.
@@ -14,7 +26,7 @@ Validated on 2026-09-24 (America/Los_Angeles), macOS, Muxy 1.6.0, Node 22.22.2, 
 - History tests cover sustained CPU, substantial monotonic memory growth, gaps, missing data, short spikes, repeated listener replacements, intentional-action resets, and manual refresh bursts.
 - Browser-host choices, custom addresses, bounded parsing/storage, script discovery, terminal links, and persistence failures retain existing coverage.
 
-Distribution at the correctness checkpoint: 12 files; **78.0 KiB HTML/JavaScript/CSS**. No runtime npm dependencies, background extension script, test harness, source maps, or Python files are included. Screenshots are copied as listing assets.
+Distribution at the association-consistency checkpoint: 12 files; **78.7 KiB HTML/JavaScript/CSS**. No runtime npm dependencies, background extension script, test harness, source maps, or Python files are included. Screenshots are copied as listing assets.
 
 CI defines Node 20.19/22/24 checks plus a macOS integration job. These changed workflows have not been run remotely for this revision. Marketplace validation completed for the earlier launchpad does not validate this dashboard; a release must repeat the packaging and marketplace checks in `RELEASE.md`.
 
@@ -31,6 +43,26 @@ The integrated suite also verifies terminal navigation after a delayed tab looku
 The production fixture (`index-D8O89iMz.js`) passed `checkWideTree()`: two services stayed visible, ports 3000/3001 were retained, details stayed capped at 256 rows, the incomplete tree offered no Stop, and the unrelated listener remained actionable. Hidden events still caused zero reads/scans/mutations followed by one recovery scan; duplicate submission during a pending launch produced one terminal and blocked dismissal. `benchmarkUI()` also retained zero element creation on search/unchanged refresh, zero unchanged-card mutations, stable detail rows, and unsaved URL preservation at 200 services / 6,000 processes.
 
 Two alternating Node before/after runs measured large-fixture processing medians of 10.63/11.79 ms before and 11.01/10.62 ms after, with retained heap near 8.8 MB in both versions. These runs do not establish a speedup or a WebKit memory improvement. The existing memory regression and native macOS process integrations passed in the full suite. Reproduce with `npm run check`, `npm run benchmark`, and the browser assertions exported by `tests/performance.mjs` and `tests/starter-lifecycle.mjs`.
+
+## Association consistency and native verification — 2026-09-24
+
+Six deterministic regression cases failed before the fixes and passed afterward:
+
+- Forgetting a terminal association now rereads storage after confirmation. It preserves metadata edited during the dialog, refuses a replacement association, and cannot recreate a removed command.
+- Successful restart now starts from the freshly revalidated record, retaining concurrent name, port, and kind edits.
+- Terminal navigation checks the persisted association and the service row's observed token, so neither a stale command cache nor an old service row can navigate to a different launch.
+
+The full 104-test suite includes the native macOS process integrations. The verified build on `codex/service-dashboard` used `dist/assets/index-Bjs4yfRu.js` (SHA-256 `3469549dd1c6d5552f209bec6a09269b12fd8ceb710a3278d5731ed149c0cb1d`) and `index-BrTUVwqA.css` (SHA-256 `2ffcf0e5353353412bd9f79b330b7a2380cdfbc27cd2427d742579b217608eb2`). Source and tests were included in the concurrent shared-workspace commit `90faf1f`; the build hash remained unchanged throughout native verification.
+
+In the real Muxy app, extension details confirmed this checkout's `dist/` and enabled DEV state. Extensions → Reload loaded the build, and the panel reopened at `muxy-ext://run-deck/panel/index.html`. The temporary command `Review association 2256` ran `node scripts/muxy-smoke-server.mjs`:
+
+1. Start produced wrapper/server PIDs 35098/35099 on loopback port 53132. The named service had a Run Deck association; Terminal returned from a pre-existing tab to that exact terminal.
+2. Cancelling the first restart permission request kept both old processes and the HTTP response alive. The panel disabled stale actions; manual Refresh recovered the service and its association.
+3. Retrying Restart with one-time Allow stopped both old PIDs. Independent `ps`/`lsof` checks confirmed their exit and the free old port before authorizing replacement startup. The replacement appeared with wrapper/server PIDs 36362/36383 on port 53356, preserving the saved name. From the old terminal, the refreshed row's Terminal action selected the replacement terminal. Open displayed the diagnostic response and PID 36383 in Muxy's browser.
+4. Cancelling Forget retained the association. After Stop removed the replacement service, confirming Forget changed the saved row from linked to ready without starting another instance.
+5. Removed the temporary saved command, closed only the two test terminals and test browser, and restored the original terminal. All four test PIDs were absent and both test ports had no listeners. Existing commands, unrelated services, language, sort order, live-mode preference, and remembered permission rules were preserved.
+
+Concurrent metadata/replacement/deletion cases are covered by the deterministic adapter tests, not by native multi-window fault injection. Muxy storage still has no atomic compare-and-set operation.
 
 ## Native development-workflow verification — 2026-09-24
 

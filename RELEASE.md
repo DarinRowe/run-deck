@@ -1,6 +1,6 @@
 # Release workflow
 
-The service dashboard is currently an unreleased source change. The existing GitHub `v0.1.0` release contains the previous command launchpad.
+Version 0.2.0 introduces the service dashboard. The earlier `v0.1.0` release contains the command launchpad. English release notes live in `docs/releases/<version>.md`.
 
 ## Before publishing
 

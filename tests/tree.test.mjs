@@ -112,3 +112,17 @@ test('an old service row never navigates to a replacement launch terminal', asyn
     assert.equal(api.calls.filter(call => call[0] === 'focus').length, 0);
   } finally { monitor.dispose(); commands.dispose(); }
 });
+
+test('Terminal awaits an in-flight quiet scan and refuses a failed inspection', async () => {
+  const { api, commands, monitor, id } = await setup();
+  let release;
+  api.exec = () => new Promise(resolve => { release = resolve; });
+  const scan = monitor.refresh({ quiet: true });
+  await new Promise(resolve => setImmediate(resolve));
+  const rejected = assert.rejects(monitor.terminal(id), /Refresh/);
+  release({ exitCode: 1, stdout: '', stderr: 'denied' });
+  try {
+    await scan; await rejected;
+    assert.equal(api.calls.filter(call => call[0] === 'focus').length, 0);
+  } finally { monitor.dispose(); commands.dispose(); }
+});

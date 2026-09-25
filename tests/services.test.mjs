@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { ServiceMonitor } from '../src/services.js';
+import { ForegroundChecks } from '../src/observation.js';
 import { SCAN_SCRIPT, parseSnapshot, stopTreeScript, defaultURL, validateURL, insideDirectory, stopRestriction } from '../src/processes.js';
 import { fakeServices, processFixture, snapshotOutput, HOST_ID } from './fake-services.mjs';
 
@@ -144,6 +145,55 @@ test('workspace change during browser confirmation cancels navigation and rememb
   assert.equal(api.calls.filter(call => call[0] === 'browser').length, 0);
   assert.equal(await api.storage.get('browser-host/' + HOST_ID), null);
 });
+test('invalidation during browser confirmation cancels navigation even before context reads update', async () => {
+  const { app, api, id } = await setup();
+  try {
+    await assert.rejects(app.open(id, { confirmHost: async () => { app.invalidate(); return true; } }), /workspace changed/i);
+    assert.equal(api.calls.filter(call => call[0] === 'browser').length, 0);
+    assert.equal(await api.storage.get('browser-host/' + HOST_ID), null);
+  } finally { app.dispose(); }
+});
+test('Open awaits an in-flight quiet scan and refuses a failed inspection', async () => {
+  const { app, api, id } = await setup();
+  let release;
+  api.exec = () => new Promise(resolve => { release = resolve; });
+  const scan = app.refresh({ quiet: true });
+  await new Promise(resolve => setImmediate(resolve));
+  const opening = app.open(id, { url: 'https://app.local/' });
+  const rejected = assert.rejects(opening, /Refresh/);
+  release({ exitCode: 1, stdout: '', stderr: 'denied' });
+  try {
+    await scan; await rejected;
+    assert.equal(api.calls.filter(call => call[0] === 'browser').length, 0);
+  } finally { app.dispose(); }
+});
+test('Open does not request browser confirmation after disposal while waiting for a quiet scan', async () => {
+  const { app, api, id } = await setup();
+  let release, prompts = 0;
+  api.exec = () => new Promise(resolve => { release = resolve; });
+  const scan = app.refresh({ quiet: true });
+  await new Promise(resolve => setImmediate(resolve));
+  const rejected = assert.rejects(app.open(id, { confirmHost: async () => { prompts++; return true; } }), /Refresh/);
+  app.dispose();
+  release({ exitCode: 0, stdout: snapshotOutput(api.processes), stderr: '' });
+  await scan; await rejected;
+  assert.equal(prompts, 0);
+  assert.equal(api.calls.filter(call => call[0] === 'browser').length, 0);
+});
+for (const change of ['dispose', 'invalidate']) test(`Open does not request browser confirmation after ${change} during remembered-host lookup`, async () => {
+  const { app, api, id } = await setup();
+  let release, prompts = 0;
+  const get = api.storage.get;
+  api.storage.get = key => key.startsWith('browser-host/') ? new Promise(resolve => { release = resolve; }) : get(key);
+  const rejected = assert.rejects(app.open(id, { confirmHost: async () => { prompts++; return true; } }), /workspace changed/i);
+  app[change](); release(null);
+  try {
+    await rejected;
+    assert.equal(prompts, 0);
+    assert.equal(api.calls.filter(call => call[0] === 'browser').length, 0);
+    assert.equal(await get('browser-host/' + HOST_ID), null);
+  } finally { app.dispose(); }
+});
 test('stopping a project process is one host command, verifies the result, and does not ask twice', async () => {
   const { app, api, id } = await setup();
   const result = await app.stop(id, () => { throw new Error('Redundant confirmation'); });
@@ -161,6 +211,14 @@ test('an external process needs confirmation; cancel and workspace switch do not
   assert.equal(execCalls(api).length, 1);
   await assert.rejects(app.stop(id, async () => { api.switchContext(); return true; }), /workspace changed/);
   assert.equal(execCalls(api).length, 1);
+});
+test('invalidation during external-stop confirmation prevents signalling an obsolete observation', async () => {
+  const { app, api, id } = await setup([processFixture({ cwd: '/other' })]);
+  try {
+    await assert.rejects(app.stop(id, async () => { app.invalidate(); return true; }), /workspace changed/i);
+    assert.equal(execCalls(api).length, 1);
+    assert.equal(api.processes.length, 1);
+  } finally { app.dispose(); }
 });
 test('rapid Stop clicks cannot send duplicate signals', async () => {
   const { app, api, id } = await setup();
@@ -281,6 +339,87 @@ test('custom address survives recreating the panel and is visible in the service
   await reopened.open(reopened.state.services[0].id);
   assert.equal(api.calls.filter(call => call[0] === 'browser').at(-1)[1], 'https://app.local/dashboard');
 });
+
+test('custom addresses distinguish separate bindings on the same port', async () => {
+  const { app, api } = await setup([
+    processFixture(), processFixture({ pid: 5102, ports: [{ port: 3000, hosts: ['[::1]'] }] }),
+  ]);
+  await app.open(app.state.services[0].id, { url: 'https://ipv4.example/dashboard' });
+  const reopened = new ServiceMonitor(api);
+  await reopened.refresh();
+  assert.deepEqual(reopened.state.services.map(service => [service.url, service.customURL]), [
+    ['https://ipv4.example/dashboard', true], ['http://[::1]:3000', false],
+  ]);
+  app.dispose(); reopened.dispose();
+});
+
+test('custom address keys do not depend on binding order or duplicate addresses', async () => {
+  const { app, api, id } = await setup([processFixture({ ports: [
+    { port: 3000, hosts: ['127.0.0.1', '[::1]'] }, { port: 3001, hosts: ['127.0.0.1'] },
+  ] })]);
+  await app.open(id, { url: 'https://combined.example/' });
+  api.processes[0].ports = [
+    { port: 3001, hosts: ['127.0.0.1'] }, { port: 3000, hosts: ['[::1]', '127.0.0.1', '[::1]'] },
+  ];
+  await app.refresh();
+  assert.equal(app.state.services[0].url, 'https://combined.example/');
+  assert.equal(app.state.services[0].customURL, true);
+  app.dispose();
+});
+
+test('legacy custom addresses remain usable only when their old key is unambiguous', async () => {
+  const api = fakeServices();
+  const legacyKey = 'service-url/' + encodeURIComponent(JSON.stringify([
+    'dev-mac.local', '/Users/example/acme', '/opt/homebrew/bin/node', [3000],
+  ]));
+  await api.storage.set('service-urls/v1', { [legacyKey]: 'https://legacy.example/' });
+  const app = new ServiceMonitor(api);
+  await app.refresh();
+  assert.equal(app.state.services[0].url, 'https://legacy.example/');
+  api.processes.push(processFixture({ pid: 5102, ports: [{ port: 3000, hosts: ['[::1]'] }] }));
+  await app.refresh();
+  assert.deepEqual(app.state.services.map(service => [service.url, service.customURL]), [
+    ['http://127.0.0.1:3000', false], ['http://[::1]:3000', false],
+  ]);
+  app.dispose();
+});
+
+test('concurrent custom address saves retain both services after reopening', async () => {
+  const { app, api } = await setup([
+    processFixture(), processFixture({ pid: 5102, ports: [{ port: 3001, hosts: ['127.0.0.1'] }] }),
+  ]);
+  await Promise.all(app.state.services.map((service, index) => app.open(service.id, { url: `https://service-${index}.example/` })));
+  const reopened = new ServiceMonitor(api);
+  await reopened.refresh();
+  assert.deepEqual(reopened.state.services.map(service => service.url), [
+    'https://service-0.example/', 'https://service-1.example/',
+  ]);
+  app.dispose(); reopened.dispose();
+});
+
+test('a failed custom address write does not block queued or later saves', async () => {
+  const { app, api } = await setup([
+    processFixture(), processFixture({ pid: 5102, ports: [{ port: 3001, hosts: ['127.0.0.1'] }] }),
+  ]);
+  const [first, second] = app.state.services;
+  const set = api.storage.set;
+  let attempts = 0;
+  api.storage.set = async (key, value) => {
+    if (key === 'service-urls/v1' && ++attempts === 1) throw new Error('Storage unavailable');
+    return set(key, value);
+  };
+  const results = await Promise.allSettled([
+    app.open(first.id, { url: 'https://first.example/' }), app.open(second.id, { url: 'https://second.example/' }),
+  ]);
+  assert.equal(results[0].status, 'rejected');
+  assert.match(results[0].reason.message, /Storage unavailable/);
+  assert.equal(results[1].status, 'fulfilled');
+  await app.open(first.id, { url: 'https://retry.example/' });
+  const reopened = new ServiceMonitor(api);
+  await reopened.refresh();
+  assert.deepEqual(reopened.state.services.map(service => service.url), ['https://retry.example/', 'https://second.example/']);
+  app.dispose(); reopened.dispose();
+});
 test('refresh requested during an external-stop confirmation runs after cancellation', async () => {
   const { app, api, id } = await setup([processFixture({ cwd: '/other' })]);
   const result = await app.stop(id, async () => { await app.refresh(); return false; });
@@ -288,6 +427,22 @@ test('refresh requested during an external-stop confirmation runs after cancella
   assert.equal(execCalls(api).length, 2);
   assert(execCalls(api).every(call => call[1].shell === SCAN_SCRIPT));
   assert.equal(app.state.status, 'ready');
+});
+test('an automatic refresh that reaches a pending Stop cannot escape foreground scheduling', async () => {
+  const { app, api, id } = await setup([processFixture({ cwd: '/other' })]);
+  const checks = new ForegroundChecks(async ({ signal }) => {
+    await app.refresh({ quiet: true, signal });
+    return app.state.status === 'ready';
+  }, () => {}, { clearTimeout() {}, setTimeout() { return 1; } });
+  let release;
+  const stopping = app.stop(id, () => new Promise(resolve => { release = resolve; }));
+  try {
+    checks.setEnabled(true);
+    await checks.run(false, true);
+    checks.setVisible(false);
+    release(false); await stopping;
+    assert.equal(execCalls(api).length, 1, 'hiding must not allow a deferred automatic scan after Stop confirmation');
+  } finally { checks.dispose(); app.dispose(); }
 });
 test('context invalidation disables actions and discards an in-flight scan without starting another', async () => {
   const { app, api, id } = await setup();

@@ -396,7 +396,9 @@ function renderCards(services) {
     property(p.alerts, 'hidden', !service.alerts?.length || stale);
     card.classList.toggle('needs-attention', !!service.alerts?.length && !stale);
     const samples = service.samples || [];
-    property(p.trend, 'hidden', samples.length < 2 || samples.some(s => s.cpu == null));
+    // SVG does not reflect the HTML hidden property into an attribute.
+    const hideTrend = samples.length < 2 || samples.some(s => s.cpu == null);
+    if (p.trend.hasAttribute('hidden') !== hideTrend) p.trend.toggleAttribute('hidden', hideTrend);
     const maximum = Math.max(100, ...samples.map(s => s.cpu || 0));
     attribute(p.line, 'points', samples.map((s,i) => `${i * 96 / Math.max(1,samples.length-1)},${22 - (s.cpu || 0) / maximum * 20}`).join(' '));
     text(p.terminal, t('terminalShort')); property(p.terminal, 'hidden', !terminalAvailable);

@@ -1,0 +1,46 @@
+--- a/tests/webkit-soak.mjs
++++ b/tests/webkit-soak.mjs
+@@ -29,7 +29,7 @@
+  assert(!document.hidden,'Document hidden');
+  const started=performance.now();
+  const report=type=>send({type,arm,phase,cycles,scans,elapsed_s:(performance.now()-started)/1000,cadence_ms:cadence,services,members,
+-  elements:document.querySelectorAll('*').length,details:document.querySelectorAll('.detail-body').length,
++  elements:document.getElementsByTagName('*').length,details:document.getElementsByClassName('detail-body').length,
+   rawBytes,historyKeys:history.records.size,latestServices:latest?.length||0,errors:window.previewErrors?.length||0,documentHidden:document.hidden});
+  report('phase');
+  for(;cycles<count;cycles++){
+@@ -43,18 +43,18 @@
+    });
+    if(isUI){api.processes=processes;
+     document.querySelector('.refresh').click();await settle();await until(()=>!document.querySelector('.refresh').disabled);
+-    assert(document.querySelectorAll('.service').length===services,'Service count');
++    assert(document.getElementsByClassName('service').length===services,'Service count');
+     assert(document.querySelector('.service .stop').title.includes(`PID ${base} ·`),'Stale PID');
+     if(arm!=='no-details'){
+-     for(const detail of Array.from(document.querySelectorAll('.service-details')).slice(0,8))detail.open=true;
+-     await settle();assert(document.querySelectorAll('tbody tr').length===Math.min(8,services)*members,'Detail rows');
+-     for(const detail of document.querySelectorAll('.service-details[open]'))detail.open=false;await settle();
++     for(let i=0;i<Math.min(8,services);i++)document.getElementsByClassName('service-details')[i].open=true;
++     await settle();assert(document.getElementsByTagName('tr').length - Math.min(8,services)===Math.min(8,services)*members,'Detail rows');
++     for(let i=0;i<Math.min(8,services);i++)document.getElementsByClassName('service-details')[i].open=false;await settle();
+     }
+     if(arm!=='no-search'){
+      const search=document.querySelector('.search');
+      for(const value of ['no-such-service','storefront','']){search.value=value;search.dispatchEvent(new Event('input',{bubbles:true}));void document.body.offsetHeight;}
+     }
+-    assert(document.querySelectorAll('.detail-body').length===0,'Retained attached details');api.calls.length=0;
++    assert(document.getElementsByClassName('detail-body').length===0,'Retained attached details');api.calls.length=0;
+     assert(window.previewErrors.length===0,window.previewErrors[0]);
+    }else{
+     const raw=snapshotOutput(processes);rawBytes=raw.length;
+--- a/scripts/webkit-memory.swift
++++ b/scripts/webkit-memory.swift
+@@ -43,7 +43,7 @@
+         }
+         heartbeat = Timer.scheduledTimer(withTimeInterval: 10, repeats: true) { [weak self] _ in
+             guard let self else { return }
+-            self.webView.evaluateJavaScript("({hidden:document.hidden, focused:document.hasFocus(), ready:document.readyState, cards:document.querySelectorAll('.service').length, refreshDisabled:document.querySelector('.refresh')?.disabled})") { result, error in
++            self.webView.evaluateJavaScript("({hidden:document.hidden, focused:document.hasFocus(), ready:document.readyState, cards:document.getElementsByClassName('service').length, refreshDisabled:document.querySelector('.refresh')?.disabled})") { result, error in
+                 self.emit(["type": "heartbeat", "page": result ?? [:], "windowVisible": self.window.isVisible,
+                            "windowOcclusion": self.window.occlusionState.rawValue, "windowKey": self.window.isKeyWindow,
+                            "appActive": NSApplication.shared.isActive, "error": error?.localizedDescription ?? ""])

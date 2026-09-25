@@ -1,0 +1,156 @@
+{
+  "full": {
+    "pids": {
+      "host": 36573,
+      "gpu": 36576,
+      "networking": 36578,
+      "webcontent": 36577
+    },
+    "exited": {
+      "host": true,
+      "gpu": true,
+      "networking": true,
+      "webcontent": true
+    }
+  },
+  "fixture": {
+    "pids": {
+      "host": 39005,
+      "gpu": 39007,
+      "webcontent": 39008,
+      "networking": 39009
+    },
+    "exited": {
+      "host": true,
+      "gpu": true,
+      "webcontent": true,
+      "networking": true
+    }
+  },
+  "data": {
+    "pids": {
+      "host": 39587,
+      "webcontent": 39590,
+      "networking": 39591,
+      "gpu": 39589
+    },
+    "exited": {
+      "host": true,
+      "webcontent": true,
+      "networking": true,
+      "gpu": true
+    }
+  },
+  "no-details": {
+    "pids": {
+      "host": 40013,
+      "gpu": 40015,
+      "networking": 40017,
+      "webcontent": 40016
+    },
+    "exited": {
+      "host": true,
+      "gpu": true,
+      "networking": true,
+      "webcontent": true
+    }
+  },
+  "no-form": {
+    "pids": {
+      "host": 40767,
+      "networking": 40771,
+      "gpu": 40769,
+      "webcontent": 40770
+    },
+    "exited": {
+      "host": true,
+      "networking": true,
+      "gpu": true,
+      "webcontent": true
+    }
+  },
+  "live-query": {
+    "pids": {
+      "host": 40330,
+      "webcontent": 40338,
+      "gpu": 40337,
+      "networking": 40339
+    },
+    "exited": {
+      "host": true,
+      "webcontent": true,
+      "gpu": true,
+      "networking": true
+    }
+  },
+  "row-pool": {
+    "pids": {
+      "host": 41015,
+      "gpu": 41017,
+      "networking": 41019,
+      "webcontent": 41018
+    },
+    "exited": {
+      "host": true,
+      "gpu": true,
+      "networking": true,
+      "webcontent": true
+    }
+  },
+  "detail-cache": {
+    "pids": {
+      "host": 41387,
+      "networking": 41391,
+      "gpu": 41389,
+      "webcontent": 41390
+    },
+    "exited": {
+      "host": true,
+      "networking": true,
+      "gpu": true,
+      "webcontent": true
+    }
+  },
+  "attached-cache": {
+    "pids": {
+      "host": 41724,
+      "gpu": 41726,
+      "networking": 41728,
+      "webcontent": 41727
+    },
+    "exited": {
+      "host": true,
+      "gpu": true,
+      "networking": true,
+      "webcontent": true
+    }
+  },
+  "minimal-static": {
+    "pids": {
+      "host": 41983,
+      "gpu": 41985,
+      "webcontent": 41986,
+      "networking": 41987
+    },
+    "exited": {
+      "host": true,
+      "gpu": true,
+      "webcontent": true,
+      "networking": true
+    }
+  },
+  "minimal-live": {
+    "pids": {
+      "host": 42223,
+      "networking": 42227,
+      "webcontent": 42226,
+      "gpu": 42225
+    },
+    "exited": {
+      "host": true,
+      "networking": true,
+      "webcontent": true,
+      "gpu": true
+    }
+  }
+}

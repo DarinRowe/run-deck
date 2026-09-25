@@ -13,6 +13,7 @@ export class ServiceMonitor {
     this.stopping = false;
     this.refreshAfterStop = false;
     this.urls = null;
+    this.urlWrite = Promise.resolve();
     this.disposed = false;
     this.generation = 0;
   }
@@ -33,8 +34,7 @@ export class ServiceMonitor {
     return contextFrom(projects, trees);
   }
 
-  async assertContext(context) {
-    const generation = this.generation;
+  async assertContext(context, generation = this.generation) {
     const current = await this.context();
     if (this.disposed || generation !== this.generation || !sameContext(current, context)) {
       throw new Error('The workspace changed. Refresh before continuing.');
@@ -43,7 +43,12 @@ export class ServiceMonitor {
 
   refresh({ quiet = false, signal } = {}) {
     if (this.disposed) return Promise.resolve();
-    if (this.stopping) { this.refreshAfterStop = true; return Promise.resolve(); }
+    if (this.stopping) {
+      // Automatic requests belong to the foreground scheduler. Deferring one
+      // here would outlive its scheduler job and lose later focus cancellation.
+      if (!signal) this.refreshAfterStop = true;
+      return Promise.resolve();
+    }
     if (this.job) return this.job;
     const generation = ++this.generation;
     if (!quiet || !this.state.checkedAt) this.state.status = 'loading';
@@ -98,8 +103,16 @@ export class ServiceMonitor {
     }
     const snapshot = parseSnapshot(result.stdout);
     this.snapshot = snapshot;
-    this.state.services = groupServices(snapshot, this.commands && sameContext(this.commands.context, context) ? this.commands.entries : []).map(service => {
-      let customURL = this.urls?.[this.urlKey(service)];
+    const services = groupServices(snapshot, this.commands && sameContext(this.commands.context, context) ? this.commands.entries : []);
+    const legacyKeys = new Map();
+    for (const service of services) {
+      const key = this.urlKey(service, true);
+      legacyKeys.set(key, (legacyKeys.get(key) || 0) + 1);
+    }
+    this.state.services = services.map(service => {
+      const legacyKey = this.urlKey(service, true);
+      let customURL = this.urls?.[this.urlKey(service)]
+        ?? (legacyKeys.get(legacyKey) === 1 ? this.urls?.[legacyKey] : null);
       try { if (customURL) customURL = validateURL(customURL); } catch { customURL = null; }
       return { ...service, inProject: insideDirectory(service.cwd, context.path),
         restriction: service.restriction || stopRestriction(service, snapshot.uid),
@@ -116,7 +129,7 @@ export class ServiceMonitor {
 
   service(id) {
     const service = this.state.services.find(item => item.id === id);
-    if (!service || this.state.status !== 'ready') throw new Error('Refresh services before continuing.');
+    if (this.disposed || !service || this.state.status !== 'ready') throw new Error('Refresh services before continuing.');
     return service;
   }
 
@@ -128,30 +141,41 @@ export class ServiceMonitor {
     finally { this.state.busy.delete(id); this.notify(); }
   }
 
-  urlKey(service) {
-    return 'service-url/' + encodeURIComponent(JSON.stringify([this.snapshot.hostname, service.cwd, service.executable, service.ports.map(item => item.port)]));
+  urlKey(service, legacy = false) {
+    const endpoints = [...service.ports].sort((a, b) => a.port - b.port)
+      .map(item => legacy ? item.port : [item.port, [...new Set(item.hosts)].sort()]);
+    return 'service-url/' + encodeURIComponent(JSON.stringify([this.snapshot.hostname, service.cwd, service.executable, endpoints]));
   }
 
   open(id, { url: customURL, confirmHost = async () => false } = {}) {
     return this.exclusive(id, async () => {
+      if (this.job) await this.job;
       const service = this.service(id);
       const context = this.state.context;
+      const generation = this.generation;
       const key = this.urlKey(service);
+      const legacyKey = this.urlKey(service, true);
       const url = validateURL(customURL ?? service.url);
       const hostKey = 'browser-host/' + this.snapshot.hostId;
       if (customURL === undefined && !service.customURL && !await this.api.storage.get(hostKey)) {
+        if (this.disposed || generation !== this.generation) throw new Error('The workspace changed. Refresh before continuing.');
         if (!await confirmHost(this.snapshot.hostname)) return;
-        await this.assertContext(context);
+        await this.assertContext(context, generation);
         await this.api.storage.set(hostKey, true);
       }
-      await this.assertContext(context);
+      await this.assertContext(context, generation);
       await this.api.browser.open(url);
       if (customURL !== undefined) {
-        const urls = { ...this.urls };
-        delete urls[key]; urls[key] = url;
-        const bounded = Object.fromEntries(Object.entries(urls).slice(-100));
-        await this.api.storage.set('service-urls/v1', bounded);
-        this.urls = bounded;
+        // Different rows share this persisted map; merge after the prior write.
+        const write = this.urlWrite.then(async () => {
+          const urls = { ...this.urls };
+          delete urls[legacyKey]; delete urls[key]; urls[key] = url;
+          const bounded = Object.fromEntries(Object.entries(urls).slice(-100));
+          await this.api.storage.set('service-urls/v1', bounded);
+          this.urls = bounded;
+        });
+        this.urlWrite = write.catch(() => {});
+        await write;
         service.url = url; service.customURL = true;
       }
       return url;
@@ -159,6 +183,7 @@ export class ServiceMonitor {
   }
 
   async terminal(id) {
+    if (this.job) await this.job;
     const service = this.service(id);
     if (!service.source?.entryId || !this.commands) throw new Error('No verified terminal association.');
     const context = this.state.context;
@@ -166,8 +191,8 @@ export class ServiceMonitor {
     await this.commands.terminal(service.source.entryId, context, service.source.token);
   }
 
-  async performStop(service, context, snapshot) {
-    await this.assertContext(context);
+  async performStop(service, context, snapshot, observedGeneration) {
+    await this.assertContext(context, observedGeneration);
     const generation = ++this.generation;
     const result = await this.api.exec({ shell: stopTreeScript(service, snapshot), timeoutMs: 15000 });
     await this.assertContext(context);
@@ -194,13 +219,14 @@ export class ServiceMonitor {
         const service = this.service(id);
         const context = this.state.context;
         const snapshot = this.snapshot;
+        const generation = this.generation;
         if (service.restriction) throw new Error('This process cannot be stopped from Run Deck.');
         if (restarting && (!service.source?.entryId || !this.commands)) throw new Error('A verified Run Deck launch is required to restart.');
         if (!service.inProject && !await confirm(service)) return { cancelled: true };
         this.history.forget(service, snapshot.hostId);
-        if (!restarting) return await this.performStop(service, context, snapshot);
+        if (!restarting) return await this.performStop(service, context, snapshot, generation);
         const entry = await this.commands.restart(service.source.entryId, service.source.token, async () => {
-          const result = await this.performStop(service, context, snapshot);
+          const result = await this.performStop(service, context, snapshot, generation);
           if (result.outcome !== 'stopped') throw new Error('The old service or its port is still active. Restart cancelled.');
           return { hostId: snapshot.hostId, uid: snapshot.uid, members: service.members, ports: service.ports };
         });

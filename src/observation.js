@@ -69,7 +69,8 @@ export class ForegroundChecks {
 export class ServiceHistory {
   constructor() { this.records = new Map(); }
   key(service, host) {
-    return JSON.stringify([host, service.source?.entryId || service.cwd, service.executable, service.ports.map(p => p.port)]);
+    const endpoints = service.ports.map(p => [p.port, [...(p.hosts || [])].sort()]).sort((a, b) => a[0] - b[0]);
+    return JSON.stringify([host, service.source?.entryId || service.cwd, service.executable, endpoints]);
   }
   observe(service, host, now) {
     const key = this.key(service, host);
@@ -90,8 +91,12 @@ export class ServiceHistory {
     record.at = now; this.records.delete(key); this.records.set(key, record);
     while (this.records.size > 200) this.records.delete(this.records.keys().next().value);
     const alerts = [];
-    const sustained = record.samples.filter(s => now - s.at <= 35000);
-    if (sustained.length >= 4 && now - sustained[0].at >= 30000) {
+    // Inspection time makes the cadence longer than five seconds. Include the
+    // nearest sample spanning 30 seconds instead of requiring a fixed 35s bin.
+    const lastAt = record.samples.at(-1).at;
+    const startIndex = record.samples.findLastIndex(s => lastAt - s.at >= 30000);
+    const sustained = startIndex < 0 ? [] : record.samples.slice(startIndex);
+    if (sustained.length >= 4) {
       if (sustained.every(s => s.cpu != null && s.cpu >= 80)) alerts.push('highCPU');
       const first = sustained[0].memory, last = sustained.at(-1).memory;
       if (first != null && last != null && last - first >= 100 * 1024 * 1024 && last >= first * 1.25

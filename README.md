@@ -26,9 +26,18 @@ Open Run Deck to see services listening on TCP ports, including those started ou
 
 CPU is the recent average reported by macOS `ps` and may exceed 100%. Memory is summed resident memory (RSS), shown in decimal MB/GB; shared pages may be counted more than once, so totals are labelled **estimate**. Missing values show **—**. **Top** compares development services and is not an anomaly warning. See Apple's [ps documentation](https://github.com/apple-oss-distributions/adv_cmds/blob/main/ps/ps.1) for measurement definitions.
 
-## Install from source
+## Install
 
-The service dashboard on this branch is in development. The published [v0.1.0 ZIP](https://github.com/DarinRowe/run-deck/releases/tag/v0.1.0) contains the earlier command launchpad; build this source to use the dashboard.
+Download `run-deck-0.2.0.zip` and `SHA256SUMS` from the [v0.2.0 release](https://github.com/DarinRowe/run-deck/releases/tag/v0.2.0). Verify the download, then extract it:
+
+```sh
+shasum -a 256 -c SHA256SUMS
+unzip run-deck-0.2.0.zip
+```
+
+In Muxy, choose **Extensions → Load Unpacked** and select the extracted `run-deck/` folder. The ZIP is an unsigned local installation package; Node is not required to run it. See the [release notes](docs/releases/0.2.0.md) for changes from the v0.1.0 command launchpad.
+
+### Build from source
 
 Use Node 20.19+ on the 20.x line, or Node 22.12+ (Node 22 or 24 recommended):
 

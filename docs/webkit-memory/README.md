@@ -4,6 +4,8 @@ Measured on 2026-09-24 (America/Los_Angeles), using an immutable production buil
 
 A later [performance re-audit](../performance-reaudit/README.md) fixed a distinct-scan retention issue reproduced in Node/V8. Native WebKit data probes did not reproduce it; the historical full-UI measurements in this report remain unchanged and are not claimed to have improved.
 
+A subsequent [attribution investigation](attribution/README.md) reproduced a 1.36 GiB peak in a standalone DOM page with no Run Deck code or process fixtures. Ordinary refresh controls stayed much smaller. This rules out treating this historical peak as proof of a plugin-specific leak; it does not establish that the production peak is fixed.
+
 ## Result
 
 The run completed all five phases in **2101.5 seconds**, with **1,384 refresh cycles**, **11,072 detail expansions**, and zero browser errors. Hidden events caused **zero scans and zero DOM mutations**. At cycle boundaries, the sampled DOM settled at 4,667 elements with no attached detail bodies after closing; the per-cycle DOM bound also passed. Temporary expanded detail nodes are not included in those boundary counts. The same WebContent PID survived the run; all four test-owned processes exited afterward.

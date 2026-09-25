@@ -76,3 +76,48 @@ for (const action of ['dispose', 'switch']) test(`discovery stops stale file rea
   try { await rejected; assert.deepEqual(f.calls, ['list']); }
   finally { f.app.dispose(); }
 });
+
+for (const phase of ['initial', 'final']) for (const transition of ['cancel', 'dispose', 'workspace event']) {
+  test(`${transition} during ${phase} discovery context lookup prevents its next host read`, async () => {
+    const api = fakeMuxy(), app = new Launchpad(api), controller = new AbortController();
+    app.subscribe(); await app.refresh();
+    const calls = [];
+    let release, entered, projectReads = 0;
+    const waiting = new Promise(resolve => { entered = resolve; });
+    const list = api.projects.list;
+    api.projects.list = async () => {
+      calls.push('projects');
+      const projects = await list();
+      if (++projectReads !== (phase === 'initial' ? 1 : 2)) return projects;
+      return new Promise(resolve => { release = () => resolve(projects); entered(); });
+    };
+    const worktrees = api.worktrees.list;
+    api.worktrees.list = (...args) => { calls.push('worktrees'); return worktrees(...args); };
+    for (const method of ['list', 'stat', 'read']) {
+      const original = api.files[method];
+      api.files[method] = (...args) => { calls.push(method); return original(...args); };
+    }
+    const pending = app.discover({ signal: controller.signal });
+    const rejected = assert.rejects(pending, transition === 'cancel' ? /dialog closed/ : /Workspace changed/);
+    await waiting;
+    const before = [...calls];
+    if (transition === 'cancel') controller.abort(new Error('dialog closed'));
+    else if (transition === 'dispose') app.dispose();
+    else { app.setVisible(false); api.emit('worktree.switched', {}); }
+    release();
+    try { await rejected; assert.deepEqual(calls, before); }
+    finally { app.dispose(); }
+  });
+}
+
+test('discovery discards an invalidated file read even when refreshed context is unchanged', async () => {
+  const f = await fixture();
+  const pending = f.app.discover();
+  const rejected = assert.rejects(pending, /Workspace changed/);
+  await f.waiting;
+  f.api.emit('worktree.switched', {});
+  await f.app.refresh();
+  f.release();
+  try { await rejected; assert.deepEqual(f.calls, ['list']); }
+  finally { f.app.dispose(); }
+});

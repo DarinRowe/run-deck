@@ -1,0 +1,11 @@
+--- a/src/main.js
++++ b/src/main.js
+@@ -276,7 +276,7 @@
+     catch (error) { showError(error); }
+     finally { openCustom.disabled = false; activeActions--; live.setHeld(!!activeActions || !!dialog); lastFocusRefresh = Date.now(); }
+   });
+-  urlOptions.append(urlSummary, urlForm);
++  urlOptions.append(urlSummary);
+   detailBody.append(metadata, processTree, restriction, urlOptions); detail.append(detailBody);
+   return { body: detailBody, metadataCells, treeTitle, treeColumns, treeList, rows: new Map(), restriction, url, urlSummary, urlField, urlHint, openCustom };
+ }

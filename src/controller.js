@@ -25,18 +25,26 @@ export class Launchpad {
     this.error = '';
   }
 
-  async currentContext() {
+  async currentContext(check = () => {}) {
+    check();
     const projects = await this.api.projects.list();
+    check();
     const active = projects.find(p => p.isActive);
     if (!active) throw new Error('Open a project in Muxy first.');
     const worktrees = await this.api.worktrees.list(active.id);
+    check();
     return contextFrom(projects, worktrees);
   }
 
-  async assertContext(expected = this.context) {
+  async assertContext(expected = this.context, { signal } = {}) {
     const version = this.contextVersion;
-    const current = this.disposed ? null : await this.currentContext();
-    if (this.disposed || version !== this.contextVersion || !sameContext(expected, current)) {
+    const check = () => {
+      signal?.throwIfAborted();
+      if (this.disposed || version !== this.contextVersion) throw new Error('Workspace changed. Refresh Run Deck and try again.');
+    };
+    const current = await this.currentContext(check);
+    check();
+    if (!sameContext(expected, current)) {
       throw new Error('Workspace changed. Refresh Run Deck and try again.');
     }
   }
@@ -147,6 +155,8 @@ export class Launchpad {
   async persist(context, entry) {
     this.epoch++;
     await this.api.storage.set(scopeKey(context) + entry.id, entry);
+    // Reads started while the host write was pending may still hold old data.
+    this.epoch++;
     if (!this.disposed && sameContext(this.context, context)) {
       const index = this.entries.findIndex(item => item.id === entry.id);
       if (index < 0) this.entries.push(entry);
@@ -212,13 +222,25 @@ export class Launchpad {
       const tabId = await this.api.tabs.open({ kind: 'terminal', directory: entry.directory, command: launchCommand(entry.command, staged.run.token, guard) });
       if (typeof tabId !== 'string' || !tabId) throw new Error('Muxy did not return a terminal ID. Review the terminal before retrying.');
       opened = true;
-      const linked = { ...staged, run: { ...staged.run, state: 'linked', tabId } };
+      const stored = await this.api.storage.get(scopeKey(context) + entry.id);
+      if (!stored || !sameAssociation(stored.run, staged.run)) {
+        throw new Error('Launch association changed while opening the terminal. Refresh before continuing.');
+      }
+      const current = decodeRecord(stored, entry.id);
+      const linked = { ...current, run: { ...current.run, state: 'linked', tabId } };
       await this.persist(context, linked);
       // Read failures cannot undo a launch and association already confirmed.
       await this.refresh().catch(error => this.report(error));
       return linked;
     } catch (error) {
-      try { await this.persist(context, { ...staged, run: { ...staged.run, state: 'unknown' } }); } catch {}
+      try {
+        const stored = await this.api.storage.get(scopeKey(context) + entry.id);
+        // A late failure must not undo a linked, forgotten, or replaced run.
+        if (stored && sameAssociation(stored.run, staged.run)) {
+          const current = decodeRecord(stored, entry.id);
+          await this.persist(context, { ...current, run: { ...current.run, state: 'unknown' } });
+        }
+      } catch {}
       throw new Error(`${error.message} ${opened ? 'A terminal was opened. ' : ''}Check Muxy before starting another instance.`);
     }
   }
@@ -286,6 +308,7 @@ export class Launchpad {
       await this.assertContext(context);
       this.epoch++;
       await this.api.storage.delete(scopeKey(context) + id);
+      this.epoch++;
       this.entries = this.entries.filter(item => item.id !== id);
       this.changed();
     });
@@ -293,20 +316,21 @@ export class Launchpad {
 
   async discover({ signal } = {}) {
     const context = this.context;
+    const version = this.contextVersion;
     const check = () => {
       signal?.throwIfAborted();
-      if (this.disposed || !sameContext(context, this.context)) throw new Error('Workspace changed. Refresh Run Deck and try again.');
+      if (this.disposed || version !== this.contextVersion || !sameContext(context, this.context)) throw new Error('Workspace changed. Refresh Run Deck and try again.');
     };
     // Discovery is read-only and belongs to its dialog, not the mutation lock.
     // The host cannot cancel dispatched reads; stop before issuing the next one.
     check();
-    await this.assertContext(context); check();
+    await this.assertContext(context, { signal }); check();
     const entries = await this.api.files.list('', { project: context.projectId }); check();
     if (!entries.some(file => file.name === 'package.json')) return [];
     const metadata = await this.api.files.stat('package.json', { project: context.projectId }); check();
     if (metadata.size > 256 * 1024) throw new Error('package.json exceeds the 256 KiB inspection limit.');
     const file = await this.api.files.read('package.json', { project: context.projectId }); check();
-    await this.assertContext(context); check();
+    await this.assertContext(context, { signal }); check();
     return detectScripts(file.content, entries.map(file => file.name));
   }
 
