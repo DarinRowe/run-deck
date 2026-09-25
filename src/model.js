@@ -1,5 +1,4 @@
 export const MAX_COMMANDS = 100;
-export const MAX_PORT_ROWS = 200;
 
 export function validateEntry(input) {
   const name = String(input.name ?? '').trim();
@@ -24,8 +23,9 @@ export function decodeRecord(value, id) {
   if (!value || value.version !== 1 || value.id !== id) throw new Error('Saved command is invalid.');
   const entry = validateEntry(value);
   const run = value.run;
-  if (run != null && (typeof run !== 'object' || !['opening', 'linked', 'unknown'].includes(run.state)
+  if (run != null && (typeof run !== 'object' || !['opening', 'linked', 'unknown', 'restarting'].includes(run.state)
     || (run.tabId != null && typeof run.tabId !== 'string')
+    || (run.token != null && (typeof run.token !== 'string' || !/^[a-f0-9-]{36}$/.test(run.token)))
     || (run.paneId != null && typeof run.paneId !== 'string'))) throw new Error('Saved terminal association is invalid.');
   return { version: 1, id, ...entry, createdAt: Number(value.createdAt) || 0, run: run ? { ...run } : null };
 }
@@ -52,40 +52,36 @@ export function terminalState(entry, tabs) {
   return tabs.some(t => t.id === entry.run.tabId && t.kind === 'terminal') ? 'open' : 'missing';
 }
 
-export function parseListeners(text) {
-  const rows = new Map();
-  let pid = null;
-  let name = '';
-  for (const line of text.split('\n')) {
-    const value = line.slice(1);
-    if (line[0] === 'p') { pid = /^\d+$/.test(value) ? Number(value) : null; name = ''; }
-    if (line[0] === 'c') name = value.slice(0, 120);
-    if (line[0] !== 'n' || !pid) continue;
-    const match = value.match(/^(.*):(\d+)$/);
-    if (!match) continue;
-    const port = Number(match[2]);
-    if (port < 1 || port > 65535) continue;
-    const key = `${pid}:${port}`;
-    if (!rows.has(key) && rows.size < MAX_PORT_ROWS) rows.set(key, { pid, name, port, hosts: [] });
-    const row = rows.get(key);
-    if (row && !row.hosts.includes(match[1])) row.hosts.push(match[1]);
-  }
-  return [...rows.values()].sort((a, b) => a.port - b.port || a.pid - b.pid);
-}
-
 export function quoteShell(value) {
   return `'${String(value).replaceAll("'", "'\\''")}'`;
+}
+
+// Compare only literal package-script invocations, never arbitrary shell syntax.
+export function matchingCommand(entries, input) {
+  const key = command => String(command).trim().replace(
+    /^(npm|pnpm|yarn|bun) +run +(?:'([a-zA-Z0-9_][a-zA-Z0-9_:.\/-]*)'|"([a-zA-Z0-9_][a-zA-Z0-9_:.\/-]*)"|([a-zA-Z0-9_][a-zA-Z0-9_:.\/-]*))$/,
+    (_, manager, single, double, bare) => `${manager} run ${single || double || bare}`,
+  );
+  const directory = value => (value || '.').split('/').filter(part => part && part !== '.').join('/') || '.';
+  const matches = entries.filter(entry => key(entry.command) === key(input.command) && directory(entry.directory) === directory(input.directory));
+  // A previous association takes precedence over an unused duplicate record.
+  return matches.find(entry => entry.run) || matches[0];
 }
 
 export function detectScripts(content, filenames = []) {
   const pkg = JSON.parse(content);
   if (!pkg || typeof pkg.scripts !== 'object' || !pkg.scripts || Array.isArray(pkg.scripts)) return [];
-  const manager = filenames.includes('pnpm-lock.yaml') ? 'pnpm'
+  const declared = typeof pkg.packageManager === 'string' && /^(npm|pnpm|yarn|bun)@\S+$/.exec(pkg.packageManager)?.[1];
+  const manager = declared || (filenames.includes('pnpm-lock.yaml') ? 'pnpm'
     : filenames.some(n => n === 'bun.lock' || n === 'bun.lockb') ? 'bun'
-      : filenames.includes('yarn.lock') ? 'yarn' : 'npm';
+      : filenames.includes('yarn.lock') ? 'yarn' : 'npm');
   return Object.entries(pkg.scripts)
     .filter(([name, value]) => /^[a-zA-Z0-9_][a-zA-Z0-9_:.\/-]*$/.test(name) && typeof value === 'string')
     .slice(0, MAX_COMMANDS)
     .map(([name, script]) => ({ name, command: `${manager} run ${quoteShell(name)}`, directory: '.', port: null,
-      kind: /^(dev|start|serve)(:|$)/.test(name) ? 'service' : 'task', detail: script.slice(0, 240) }));
+      kind: /^(dev|start|serve)(:|$)/.test(name) ? 'service' : 'task', detail: script.slice(0, 240) }))
+    .sort((a, b) => {
+      const rank = item => ({ dev: 0, start: 1, serve: 2 })[item.name] ?? (item.kind === 'service' ? 3 : 4);
+      return rank(a) - rank(b);
+    });
 }

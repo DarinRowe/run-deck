@@ -1,0 +1,115 @@
+--- a/src/controller.js
++++ b/src/controller.js
+@@ -249,18 +249,23 @@
+     });
+   }
+ 
+-  async discover() {
+-    return this.exclusive('discover', async () => {
+-      const context = this.context;
+-      await this.assertContext(context);
+-      const entries = await this.api.files.list('', { project: context.projectId });
+-      if (!entries.some(file => file.name === 'package.json')) throw new Error('No package.json in this worktree. Add a command manually.');
+-      const metadata = await this.api.files.stat('package.json', { project: context.projectId });
+-      if (metadata.size > 256 * 1024) throw new Error('package.json exceeds the 256 KiB inspection limit.');
+-      const file = await this.api.files.read('package.json', { project: context.projectId });
+-      await this.assertContext(context);
+-      return detectScripts(file.content, entries.map(file => file.name));
+-    });
++  async discover({ signal } = {}) {
++    const context = this.context;
++    const check = () => {
++      signal?.throwIfAborted();
++      if (this.disposed || !sameContext(context, this.context)) throw new Error('Workspace changed. Refresh Run Deck and try again.');
++    };
++    // Discovery is read-only and belongs to its dialog, not the mutation lock.
++    // The host cannot cancel dispatched reads; stop before issuing the next one.
++    check();
++    await this.assertContext(context); check();
++    const entries = await this.api.files.list('', { project: context.projectId }); check();
++    if (!entries.some(file => file.name === 'package.json')) throw new Error('No package.json in this worktree. Add a command manually.');
++    const metadata = await this.api.files.stat('package.json', { project: context.projectId }); check();
++    if (metadata.size > 256 * 1024) throw new Error('package.json exceeds the 256 KiB inspection limit.');
++    const file = await this.api.files.read('package.json', { project: context.projectId }); check();
++    await this.assertContext(context); check();
++    return detectScripts(file.content, entries.map(file => file.name));
+   }
+ 
+   dispose() {
+--- a/src/main.js
++++ b/src/main.js
+@@ -482,10 +482,12 @@
+ function field(label, control) {
+   const wrapper = el('label', 'field'); wrapper.append(el('span', '', label), control); return wrapper;
+ }
+-async function openStarter() {
++function openStarter() {
+   if (dialog) return;
+   dialog = el('dialog', 'starter');
+   const activeDialog = dialog;
++  const discovery = new AbortController();
++  const current = () => !disposed && dialog === activeDialog && activeDialog.open;
+   const form = el('form');
+   const heading = el('h2', '', t('newTitle')); heading.id = 'starter-title';
+   dialog.setAttribute('aria-labelledby', heading.id);
+@@ -501,14 +503,14 @@
+   const formError = el('p', 'error'); formError.hidden = true; formError.setAttribute('role', 'alert');
+   const actions = el('div', 'form-actions');
+   let starting = false;
+-  const close = button(t('cancel'), () => { if (!starting) activeDialog.close(); });
++  const close = button(t('cancel'), () => { if (!starting) { discovery.abort(); activeDialog.close(); } });
+   const submit = el('button', 'primary', t('launch')); submit.type = 'submit'; submit.disabled = true;
+   actions.append(close, submit);
+   const saved = el('details', 'saved'); const savedSummary = el('summary', '', t('savedCommands')); const savedList = el('div'); saved.append(savedSummary, savedList);
+   form.append(heading, loading, field(t('command'), command), el('p', 'small muted', t('commandHint')), scripts, advanced, formError, actions);
+   activeDialog.append(form, saved); root.append(activeDialog);
+-  activeDialog.addEventListener('cancel', event => { if (starting) event.preventDefault(); });
+-  activeDialog.addEventListener('close', () => { activeDialog.remove(); dialog = null; live.setHeld(!!activeActions); render(); startButton.focus(); });
++  activeDialog.addEventListener('cancel', event => { if (starting) event.preventDefault(); else discovery.abort(); });
++  activeDialog.addEventListener('close', () => { discovery.abort(); activeDialog.remove(); dialog = null; live.setHeld(!!activeActions); render(); startButton.focus(); });
+   activeDialog.showModal(); live.setHeld(true); render();
+   let context;
+   let entryId = null;
+@@ -546,19 +548,29 @@
+       if (entryId) { submit.hidden = true; command.disabled = true; }
+     } finally { starting = false; submit.disabled = false; close.disabled = false; text(submit, t('launch')); lastFocusRefresh = Date.now(); }
+   });
+-  try {
+-    await commands.refresh(); context = { ...commands.context }; renderSaved();
+-    let candidates = [];
+-    try { candidates = await commands.discover(); } catch {}
+-    if (dialog !== activeDialog) return;
+-    const preferred = ['dev', 'start', 'serve'].map(key => candidates.find(item => item.name === key)).find(Boolean) || candidates.find(item => item.kind === 'service');
+-    if (preferred && !command.value) { command.value = preferred.command; name.value = preferred.name; }
+-    loading.hidden = !!preferred;
+-    text(loading, t('scriptsUnavailable'));
+-    for (const candidate of candidates) choices.append(button(candidate.name, () => { command.value = candidate.command; name.value = candidate.name; scripts.open = false; command.focus(); }, 'quiet'));
+-    scripts.hidden = !candidates.length;
+-    submit.disabled = false; command.focus();
+-  } catch (error) { loading.hidden = true; text(formError, error.message); formError.hidden = false; }
++  // The dialog holds live checks while open. Its background reads must not
++  // retain the global action hold after the user has closed it.
++  async function load() {
++    try {
++      await commands.refresh();
++      if (!current()) return;
++      context = { ...commands.context }; renderSaved();
++      let candidates = [];
++      try { candidates = await commands.discover({ signal: discovery.signal }); } catch {}
++      if (!current()) return;
++      const preferred = ['dev', 'start', 'serve'].map(key => candidates.find(item => item.name === key)).find(Boolean) || candidates.find(item => item.kind === 'service');
++      if (preferred && !command.value) { command.value = preferred.command; name.value = preferred.name; }
++      loading.hidden = !!preferred;
++      text(loading, t('scriptsUnavailable'));
++      for (const candidate of candidates) choices.append(button(candidate.name, () => { command.value = candidate.command; name.value = candidate.name; scripts.open = false; command.focus(); }, 'quiet'));
++      scripts.hidden = !candidates.length;
++      submit.disabled = false; command.focus();
++    } catch (error) {
++      if (!current()) return;
++      loading.hidden = true; text(formError, error.message); formError.hidden = false;
++    }
++  }
++  void load();
+ }
+ 
+ render();

@@ -1,0 +1,25 @@
+{
+  "timestamp": "2026-09-25T04:49:39.270929+00:00",
+  "processes": {
+    "isolated-host": {
+      "pid": 86150,
+      "exited": true,
+      "ps": ""
+    },
+    "isolated-gpu": {
+      "pid": 86188,
+      "exited": true,
+      "ps": ""
+    },
+    "isolated-networking": {
+      "pid": 86190,
+      "exited": true,
+      "ps": ""
+    },
+    "isolated-webcontent": {
+      "pid": 86189,
+      "exited": true,
+      "ps": ""
+    }
+  }
+}

@@ -25,7 +25,7 @@ for (const file of files) {
   if (/\.(js|css|html)$/.test(file)) codeBytes += (await stat(file)).size;
   if (file.endsWith('.js')) {
     const text = await readFile(file, 'utf8');
-    assert(!text.includes('setInterval('), 'No periodic polling.');
+    assert(!text.includes('setInterval('), 'Use a serialized foreground timeout, not an unconditional interval.');
     assert(!text.includes('fakeMuxy'), 'No mock host in production.');
   }
 }

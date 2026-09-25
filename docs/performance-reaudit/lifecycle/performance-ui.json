@@ -1,0 +1,41 @@
+[
+  {
+    "name": "checkHiddenEvents",
+    "result": {
+      "hidden": {
+        "reads": 0,
+        "scans": 0,
+        "mutations": 0
+      },
+      "resumed": {
+        "storageReads": 3,
+        "tabLists": 1,
+        "scans": 1
+      }
+    }
+  },
+  {
+    "name": "checkHiddenPreflight",
+    "result": {
+      "hiddenReads": 0,
+      "hiddenScans": 0,
+      "explicitRecoveryScans": 1
+    }
+  },
+  {
+    "name": "benchmarkUI",
+    "result": {
+      "services": 200,
+      "processes": 6000,
+      "elements": 4473,
+      "searchElementsCreated": 0,
+      "searchMedianMs": 0.8999998569488525,
+      "searchP95Ms": 10.700000047683716,
+      "searchWithLayoutMedianMs": 10.799999952316284,
+      "searchWithLayoutP95Ms": 22.700000047683716,
+      "unchangedRefreshElementsCreated": 0,
+      "unchangedRefreshMutations": 0,
+      "detailChecks": "passed"
+    }
+  }
+]

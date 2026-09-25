@@ -1,0 +1,53 @@
+{
+  "snapshots": {
+    "before": {
+      "src/main.js": "798133d73868d6ceb745f8d5b3af3bc330fd5df4670ae0544dd506de9e2f1c3a",
+      "src/controller.js": "7d718ca5177dd6051d83c28129869995f9645c7bbcfda1f9d82150f0e44c2d95",
+      "src/model.js": "b55c2a6e5a25fa57a0d78d3eb90b75b6f29ac1186eee9547a78d54b9f40e33f1",
+      "src/observation.js": "d3d49c499a2f2c7779a399a2a8561f3c834718ba6be2f7e2e140374377618352",
+      "src/processes.js": "f121b4b3b1383c3cbc2993f1302c6094c550a01e704bf43d7a878699eea95bc9",
+      "src/services.js": "816ba266a7b6c7dd72d32e8b3a782ed4b218fceb9760462aeaebbbacfb12c4ff",
+      "dist/assets/index-b1f2rl0E.js": "013dbde2b7b18b318eb73330a8cd52f94cf9414653d846bd146b8503d1236623",
+      "dist/assets/index-BWg0Rdsj.css": "e86ddf72fde3185be0b023e77edde699d162df1d518a9b13281f291ddbfd654d",
+      "dist/panel/index.html": "3056706bfccef6b0a8a1a01f41843872f024343fc6495eb98b5db5b4827dfe03",
+      "tests/starter-lifecycle.mjs": "a58126f04e5e9900c6481e6b77fb7fcc8c4f1315c1cc4de89808e0ba71b86a1c"
+    },
+    "after": {
+      "src/main.js": "37e890d32e4882324ef8809e763fe16305569f32efb55199f3cb50656a559b6b",
+      "src/controller.js": "676382aaae45ba44f0d61fa0b6c63ca620b61fb975097d6536df1ae069981cb4",
+      "src/model.js": "b55c2a6e5a25fa57a0d78d3eb90b75b6f29ac1186eee9547a78d54b9f40e33f1",
+      "src/observation.js": "d3d49c499a2f2c7779a399a2a8561f3c834718ba6be2f7e2e140374377618352",
+      "src/processes.js": "f121b4b3b1383c3cbc2993f1302c6094c550a01e704bf43d7a878699eea95bc9",
+      "src/services.js": "816ba266a7b6c7dd72d32e8b3a782ed4b218fceb9760462aeaebbbacfb12c4ff",
+      "dist/assets/index-CedL0lI3.js": "2436e0e3e7e221f4b8c6d2a47e09a4c5a4fe8e96c73354ac0ecc232037997b69",
+      "dist/assets/index-BWg0Rdsj.css": "e86ddf72fde3185be0b023e77edde699d162df1d518a9b13281f291ddbfd654d",
+      "dist/panel/index.html": "851123fb2924c5d381b6e3f91832c8d4be9749dfc7faeff9745a35540dd62cb9",
+      "tests/starter-lifecycle.mjs": "a58126f04e5e9900c6481e6b77fb7fcc8c4f1315c1cc4de89808e0ba71b86a1c"
+    },
+    "current": {
+      "src/services.js": "816ba266a7b6c7dd72d32e8b3a782ed4b218fceb9760462aeaebbbacfb12c4ff",
+      "src/observation.js": "d3d49c499a2f2c7779a399a2a8561f3c834718ba6be2f7e2e140374377618352",
+      "src/controller.js": "1f32a611942ef815fda7327535b6bda4d84f90c10c75ff9768cc6021b7e18417",
+      "src/main.js": "08e647edd1f06a86d33a12aad364623a115ff592ffc24f0494cd3f40f1f3f6ca",
+      "src/processes.js": "f121b4b3b1383c3cbc2993f1302c6094c550a01e704bf43d7a878699eea95bc9",
+      "src/model.js": "0b40f52f78090b68632f1546a6e670e89060c5592d2db9dfc00f3b1028686ea8",
+      "src/i18n.js": "c5294c409487d5be590fa3c1e2357e7c7410ef0aa235a196181068089cfdcdec",
+      "src/style.css": "f112b7a8d76acd5ee71282d4ac9541568cd19c22efc11a09af9ce272d8abd62a",
+      "tests/starter-lifecycle.mjs": "173a9fa19c34f4fd48a42d82500b1f5cd5df4a2a8f46e675f0acdb566c0c43c4",
+      "dist/assets/index-CDsBoP9c.js": "9588565b191a2abfbd689c56ac9496c2d6804771a94b73828ad5fec860756aef",
+      "dist/assets/index-BrTUVwqA.css": "2ffcf0e5353353412bd9f79b330b7a2380cdfbc27cd2427d742579b217608eb2",
+      "dist/panel/index.html": "657fb6111d3254620e1df6c935bf5d3524156e71117a030209290daaf437b9ac"
+    }
+  },
+  "nativeHost": {
+    "path": "/tmp/run-deck-webkit-soak/verified-host",
+    "sha256": "e1e0dbc3add2aaccdc13debf5d62dcd2628fa6f4261bbd0fad06aab480423562",
+    "source": "scripts/webkit-memory.swift"
+  },
+  "hostPidsExited": {
+    "17017": true,
+    "16940": true,
+    "20452": true
+  },
+  "notes": "Native probes use frozen before/after source and minified bundles. Concurrent command-start changes subsequently appeared in the shared workspace."
+}

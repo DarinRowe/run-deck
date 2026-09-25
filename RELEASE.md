@@ -1,47 +1,34 @@
-# Release 0.1.0
+# Release workflow
 
-Source folder: `run-deck`. Marketplace author and GitHub handle: `DarinRowe`.
+The service dashboard is currently an unreleased source change. The existing GitHub `v0.1.0` release contains the previous command launchpad.
 
-## GitHub release
+## Before publishing
 
-The public source repository is [DarinRowe/run-deck](https://github.com/DarinRowe/run-deck). Releases use English notes and include an unsigned installable ZIP plus `SHA256SUMS`.
+1. Update the version and English release notes. Keep the README installation instructions consistent with the artifact being released.
+2. Commit the source and run `npm ci && npm run check` on macOS. The check includes a disposable real-process integration test.
+3. Complete the Muxy smoke test below and update [Validation](docs/VALIDATION.md).
+4. Push the release commit and wait for all CI jobs, including macOS process integration, to pass for that commit.
+5. Package `dist/` under a single `run-deck/` directory in `run-deck-<version>.zip`. Generate `SHA256SUMS` and publish an annotated version tag with the ZIP and checksum.
+6. Download the published assets and compare their checksum and contents to the verified build.
 
-1. Commit the release source and run `npm ci && npm run check` on that commit.
-2. Push to `main` and wait for all GitHub Actions CI jobs to pass for the same commit.
-3. Package the contents of `dist/` under a single `run-deck/` directory in `run-deck-<version>.zip`. Exclude source, tests, dependencies, and local files. Generate a SHA-256 checksum for the ZIP.
-4. Create an annotated `v<version>` tag at the verified commit, then publish a GitHub release with the ZIP, checksum, installation instructions, and known limitations.
-5. Download the published assets and verify the checksum and packaged contents against the local build.
+The ZIP is an unsigned local installation package. Users extract it and choose **Extensions → Load Unpacked**. Node is not required to run it.
 
-Users extract the ZIP and load its `run-deck` directory using **Extensions → Load Unpacked**. It does not require Node. GitHub publication does not imply marketplace approval or signing.
+## Native smoke test
 
-## Before submitting to the marketplace
+Use [Develop and verify in Muxy](docs/MUXY-DEVELOPMENT.md) for the loading workflow, disposable baseline service, consent handling, and cleanup. This release checklist adds the broader behavior coverage required for publication.
 
-- Run `npm ci && npm run check`.
-- Complete the native Muxy smoke test below.
-- Put this source folder under `extensions/run-deck/` in a sparse checkout of your fork of `muxy-app/extensions`.
-- At the repository root, run `npm ci`, `node scripts/build.mjs run-deck`, `node scripts/validate.mjs run-deck`, and `node scripts/pack.mjs --dry-run run-deck`.
-- Commit source and listing assets; exclude `dist/`, `node_modules/`, and `release/`.
-- Open a PR titled **run-deck 0.1.0**, using the repository's current PR template. State that this contribution was developed with OpenAI Codex (GPT-6), and disclose any remaining validation gaps.
-- Publishing occurs after maintainer review and merge. A locally generated ZIP is unsigned; do not describe it as a store-signed release.
+- Load/reload the extension and verify automatic inspection, including consent cancellation without repeated prompts.
+- Start a disposable HTTP server with a child worker through **Start command**. Verify one grouped row, per-member resources, and exact Terminal navigation. Check that interactive commands can still read terminal input.
+- Open its page; verify the initial host confirmation and subsequent direct opening.
+- Restart that tracked server. Verify all original members exit before a single replacement starts; an occupied port must cancel replacement startup.
+- Stop the replacement tree; verify its listener and every observed member are gone.
+- Verify live checks pause when hidden, during actions, and after consent cancellation. Resume with the user’s remembered inspection grant.
+- Verify brief CPU spikes do not warn; sustained resource growth and repeated listener replacement appear inline and in Needs attention.
+- Confirm an outside-project stop can be cancelled and a stale/changed identity cannot be signalled.
+- Check remembered custom addresses, multiport rows, no-listener state, and failed-inspection state.
+- Check English/Chinese, light/dark themes, keyboard dismissal, and a narrow desktop panel.
+- Clean up only the disposable test processes, tabs, files, and saved commands created for verification.
 
-## Validation status
+## Marketplace
 
-The core native smoke test passed in Muxy 1.6.0. Automated checks and official marketplace build/validation/packing also passed. See [docs/VALIDATION.md](docs/VALIDATION.md) for evidence and explicit limits.
-
-- [x] Load Unpacked, enable, open via topbar, and reload after a build.
-- [x] Save and launch a harmless command; verify terminal output.
-- [x] Cancel launch consent; verify review/forget flow and no automatic retry.
-- [x] Launch `sleep 300`, confirm Interrupt, and verify the process exits.
-- [x] Close/reopen the panel; verify persisted entries and terminal focus.
-- [x] Close a linked terminal; verify “Terminal unavailable.”
-- [x] Inspect ports with execution allowed/cancelled; distinguish failure from an empty scan.
-- [x] Import the project's actual `test` script without auto-running; launch it explicitly and obtain 21 passing tests in Muxy.
-- [x] Check Chinese/native light UI and browser light/dark screenshots, Escape cancellation, and a 380 px narrow layout.
-- [ ] Native switch-worktree-during-editor and Send to Background tests; covered by controller simulations only.
-- [ ] Sustained CPU and incremental WebKit memory benchmark. No numeric memory claim is made.
-
-## Listing text
-
-**Run Deck — a lightweight development launchpad for Muxy.** Save commands per worktree, launch and revisit Muxy terminals, interrupt a verified terminal after confirmation, and inspect ports on demand. English and Chinese UI. No daemon, periodic polling or duplicated terminal log buffer.
-
-Screenshots show the real plugin UI with synthetic fixture data and simulated Muxy APIs. Native layout was also checked in the running app. The fixture images avoid exposing a user's project sidebar or local process list.
+Store publication is a separate contribution to [muxy-app/extensions](https://github.com/muxy-app/extensions). Re-run its current build, schema/listing validation, and package checks against this version; validation of the older launchpad is not evidence for the changed service permissions and behavior. Maintainer approval and signing are required before claiming a store release. [STORE-SUBMISSION.md](docs/STORE-SUBMISSION.md) contains draft English listing text.

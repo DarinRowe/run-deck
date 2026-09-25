@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { validateEntry, decodeRecord, terminalState, parseListeners, detectScripts, scopeKey } from '../src/model.js';
+import { validateEntry, decodeRecord, terminalState, detectScripts, scopeKey, matchingCommand } from '../src/model.js';
 
 const base = { name: 'Web', command: 'pnpm dev', directory: '.', kind: 'service', port: '' };
 test('validates command boundaries and ports', () => {
@@ -20,17 +20,6 @@ test('terminal association never implies process health', () => {
   assert.equal(terminalState({ run: { state: 'opening' } }, []), 'unknown');
   assert.equal(terminalState({}, []), 'ready');
 });
-test('parses IPv4 and IPv6 listeners without conflating different processes', () => {
-  const rows = parseListeners('p12\ncnode\nn127.0.0.1:3000\nn[::1]:3000\np13\ncpython\nn*:3000\nninvalid\n');
-  assert.equal(rows.length, 2);
-  assert.deepEqual(rows[0].hosts, ['127.0.0.1', '[::1]']);
-  assert.equal(rows[1].pid, 13);
-});
-test('caps listener memory and ignores malformed records', () => {
-  const input = Array.from({ length: 2000 }, (_, i) => `p${i+1}\ncnode\nn*:${1000+i}`).join('\n');
-  assert.equal(parseListeners(input).length, 200);
-  assert.deepEqual(parseListeners('n*:3000\npabc\nn*:80\np1\nn*:99999'), []);
-});
 test('imports only explicit script names with safe shell quoting', () => {
   const scripts = detectScripts(JSON.stringify({ scripts: { dev: 'vite', 'test:unit': 'node test', '--evil': 'x', 'x; echo danger': 'x', bad: 3 } }), ['pnpm-lock.yaml']);
   assert.equal(scripts.length, 2);
@@ -40,4 +29,27 @@ test('imports only explicit script names with safe shell quoting', () => {
 });
 test('storage is scoped by project and worktree, not a display name', () => {
   assert.notEqual(scopeKey({ projectId: 'p1', worktreeId: 'w1' }), scopeKey({ projectId: 'p1', worktreeId: 'w2' }));
+});
+
+test('explicit package manager wins over stale lockfiles and service scripts come first', () => {
+  const scripts = detectScripts(JSON.stringify({ packageManager: 'npm@10.9.0', scripts: {
+    build: 'vite build', 'dev:api': 'node server.js', serve: 'vite preview', start: 'node app.js', dev: 'vite', test: 'node --test',
+  } }), ['pnpm-lock.yaml', 'yarn.lock']);
+  assert.deepEqual(scripts.map(script => script.name), ['dev', 'start', 'serve', 'dev:api', 'build', 'test']);
+  assert(scripts.every(script => script.command.startsWith('npm run ')));
+  for (const [file, manager] of [['pnpm-lock.yaml', 'pnpm'], ['yarn.lock', 'yarn'], ['bun.lock', 'bun'], ['bun.lockb', 'bun'], ['package-lock.json', 'npm']]) {
+    assert.equal(detectScripts('{"scripts":{"dev":"vite"}}', [file])[0].command, `${manager} run 'dev'`);
+  }
+});
+
+test('command matching tolerates literal script quoting while preserving shell and directory distinctions', () => {
+  const entry = { ...base, command: 'npm run dev', directory: './apps/web/' };
+  assert.equal(matchingCommand([entry], { command: "npm run 'dev'", directory: 'apps/web' }), entry);
+  assert.equal(matchingCommand([entry], { command: 'npm run "dev"', directory: 'apps/web' }), entry);
+  for (const command of ['npm run dev -- --host', 'npm run dev && echo done', 'pnpm run dev', 'npm run "d$ev"']) {
+    assert.equal(matchingCommand([entry], { command, directory: 'apps/web' }), undefined);
+  }
+  assert.equal(matchingCommand([entry], { command: entry.command, directory: '.' }), undefined);
+  const linked = { ...entry, run: { state: 'unknown' } };
+  assert.equal(matchingCommand([entry, linked], entry), linked);
 });

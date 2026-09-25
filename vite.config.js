@@ -5,7 +5,7 @@ export default defineConfig({
   base: './',
   build: {
     target: 'safari17',
-    minify: false,
+    minify: true,
     rollupOptions: { input: resolve(import.meta.dirname, 'panel/index.html') },
   },
 });

@@ -1,0 +1,30 @@
+[
+  {
+    "variant": "before",
+    "services": 200,
+    "processes": 6000,
+    "elements": 4468,
+    "searchElementsCreated": 0,
+    "searchMedianMs": 1,
+    "searchP95Ms": 1.2000000476837158,
+    "searchWithLayoutMedianMs": 9.799999952316284,
+    "searchWithLayoutP95Ms": 12.200000047683716,
+    "unchangedRefreshElementsCreated": 0,
+    "unchangedRefreshMutations": 0,
+    "detailChecks": "passed"
+  },
+  {
+    "variant": "after",
+    "services": 200,
+    "processes": 6000,
+    "elements": 4468,
+    "searchElementsCreated": 0,
+    "searchMedianMs": 1.0999999046325684,
+    "searchP95Ms": 1.2999999523162842,
+    "searchWithLayoutMedianMs": 9.5,
+    "searchWithLayoutP95Ms": 11.100000143051147,
+    "unchangedRefreshElementsCreated": 0,
+    "unchangedRefreshMutations": 0,
+    "detailChecks": "passed"
+  }
+]

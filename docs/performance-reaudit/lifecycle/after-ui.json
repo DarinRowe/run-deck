@@ -1,0 +1,74 @@
+[
+  {
+    "name": "checkStarterClosedDuringRefresh",
+    "passed": true,
+    "result": {
+      "fileListsAfterClose": 0,
+      "detachedDialogMutations": 0
+    }
+  },
+  {
+    "name": "checkStarterReopen",
+    "passed": true,
+    "result": {
+      "stage": "list",
+      "readyBeforeOldResponse": true,
+      "error": "",
+      "callsBeforeOldResponse": {
+        "list": 2,
+        "stat": 1,
+        "read": 1
+      },
+      "callsAfterOldResponse": {
+        "list": 2,
+        "stat": 1,
+        "read": 1
+      }
+    }
+  },
+  {
+    "name": "checkStarterReopen",
+    "passed": true,
+    "result": {
+      "stage": "stat",
+      "readyBeforeOldResponse": true,
+      "error": "",
+      "callsBeforeOldResponse": {
+        "list": 2,
+        "stat": 2,
+        "read": 1
+      },
+      "callsAfterOldResponse": {
+        "list": 2,
+        "stat": 2,
+        "read": 1
+      }
+    }
+  },
+  {
+    "name": "checkStarterReopen",
+    "passed": true,
+    "result": {
+      "stage": "read",
+      "readyBeforeOldResponse": true,
+      "error": "",
+      "callsBeforeOldResponse": {
+        "list": 2,
+        "stat": 2,
+        "read": 2
+      },
+      "callsAfterOldResponse": {
+        "list": 2,
+        "stat": 2,
+        "read": 2
+      }
+    }
+  },
+  {
+    "name": "checkStarterResumesLive",
+    "passed": true,
+    "result": {
+      "scansBeforeOldResponse": 1
+    }
+  }
+]

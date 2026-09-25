@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "A lightweight development launchpad that reuses Muxy terminals.",
+  "description": "Discover running services, open their pages, and stop them from a focused Muxy panel.",
   "author": "DarinRowe",
   "license": "MIT",
   "repository": {
@@ -21,6 +21,7 @@
     "dev": "vite --host 127.0.0.1",
     "build": "vite build && node scripts/copy-manifest.mjs",
     "test": "node --test tests/*.test.mjs",
+    "benchmark": "node --expose-gc scripts/benchmark.mjs",
     "check": "npm test && npm run build && node scripts/check-build.mjs"
   },
   "devDependencies": {
@@ -28,15 +29,13 @@
   },
   "muxy": {
     "$schema": "https://raw.githubusercontent.com/muxy-app/muxy/main/docs/extensions/schema/manifest.schema.json",
-    "description": "Save project commands, launch Muxy terminals, and inspect ports on demand. No daemon or polling.",
+    "description": "Monitor service trees and resources, jump to terminals, and safely stop or restart tracked launches. Live checks only while visible.",
     "permissions": [
       "panels:write",
       "projects:read",
       "worktrees:read",
       "tabs:read",
       "tabs:write",
-      "panes:read",
-      "panes:write",
       "storage:read",
       "storage:write",
       "commands:exec",
@@ -48,16 +47,14 @@
       "worktree.switched",
       "tab.created",
       "tab.updated",
-      "tab.closed",
-      "pane.created",
-      "pane.closed"
+      "tab.closed"
     ],
     "panels": [
       {
-        "id": "launchpad",
+        "id": "services",
         "title": "Run Deck",
         "icon": {
-          "symbol": "terminal"
+          "symbol": "play.rectangle.on.rectangle"
         },
         "entry": "panel/index.html",
         "position": "right",
@@ -66,22 +63,22 @@
     ],
     "commands": [
       {
-        "id": "toggle-launchpad",
-        "title": "Run Deck: Toggle Launchpad",
+        "id": "toggle-services",
+        "title": "Run Deck: Toggle Services",
         "action": {
           "kind": "togglePanel",
-          "panel": "launchpad"
+          "panel": "services"
         }
       }
     ],
     "topbarItems": [
       {
-        "id": "launchpad",
+        "id": "services",
         "icon": {
-          "symbol": "terminal"
+          "symbol": "play.rectangle.on.rectangle"
         },
         "tooltip": "Run Deck",
-        "command": "toggle-launchpad"
+        "command": "toggle-services"
       }
     ],
     "marketplace": {

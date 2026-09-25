@@ -3,108 +3,88 @@
 [![CI](https://github.com/DarinRowe/run-deck/actions/workflows/ci.yml/badge.svg)](https://github.com/DarinRowe/run-deck/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-A small development launchpad for Muxy. Save commands per worktree, launch them in Muxy terminals, jump to their output, and inspect listening ports when needed.
+**See what’s running. Open it. Stop it.** A focused service dashboard for Muxy on macOS.
 
-**Pure extension. No Python, Node runtime, helper binary, daemon, periodic polling, or duplicated terminal log buffer.** Node is only needed to build the source.
+![Run Deck showing running services with Open and Stop actions](public/assets/screenshot-dark.png)
 
-![Run Deck with saved commands, linked terminals, and on-demand port inspection](public/assets/screenshot-dark.png)
+*Actual UI with synthetic fixture data and a simulated Muxy interface. [Light theme](public/assets/screenshot-light.png). English and Simplified Chinese are supported.*
 
-*Actual UI with synthetic fixture data and a simulated Muxy interface. [View the light theme and Chinese UI](public/assets/screenshot-light.png).*
+## Everyday use
 
-## Install
+Open Run Deck to see services listening on TCP ports, including those started outside Muxy. Related listeners and child processes share one row. Current-worktree services appear first; known app and system processes stay collapsed.
 
-Tested in Muxy 1.6.0. Requires a Muxy version with `storage`, terminal startup commands, and enriched terminal events. The implementation was checked against Muxy source `ab008599954afe683a48410b98b8f483adb96b40`; native app validation is tracked in [RELEASE.md](RELEASE.md).
+- **Open** takes you to the service in Muxy’s browser. HTTP/HTTPS and the listening address get useful defaults; database ports do not get misleading web buttons.
+- **CPU and memory** include observed child processes. A compact overview shows development-service totals; sort by CPU or memory to find heavier services. The highest values are marked **Top**.
+- **Terminal** jumps to the exact terminal for a Run Deck launch. **Restart** stops its verified process tree, checks that it exited, then runs the saved command once in a new terminal. Previous terminal output remains available.
+- **Stop** requests a normal exit for the verified process tree and checks the result. Remaining processes or another listener on the same port are reported explicitly.
+- **Details (···)** reveals the process tree, individual resource values, directory, ports, and a saved launch command when known. Expand **Custom browser address** to specify HTTPS, another port, or a path. **About these readings** explains measurement limits once for the whole view.
+- **Start command** lists the current worktree’s project commands with a **Start** button on each row. `dev`, `start`, and `serve` appear first; build, test, and other scripts stay under **Other scripts**. Each row shows the command, script body, and directory. The root `package.json` supplies scripts; its `packageManager` selects npm, pnpm, Yarn, or Bun, with lockfiles as a fallback. Saved commands remain visible and reuse their terminal association. **Custom command** lets you save and run a command with a name and relative directory. Commands run through `/bin/sh` in a Muxy terminal, including commands that need keyboard input.
 
-### Download a release
+**Live · 5s** checks while the panel is visible, with only one inspection in flight. Hide the panel to pause; return to resume. Dialogs and actions also pause the timer. The control lets you disable or resume live checks, and **Refresh** is the single manual check. Worktree changes trigger a fresh check and pause live mode so a different execution host is not polled unexpectedly.
 
-1. Download `run-deck-0.1.0.zip` from [GitHub Releases](https://github.com/DarinRowe/run-deck/releases/latest) and extract it.
-2. In Muxy, open **Extensions → Load Unpacked**, select the extracted `run-deck` folder containing `package.json`, and enable the extension.
-3. Open **Run Deck: Toggle Launchpad** from the command palette, or click its terminal icon in the topbar/extension rail.
+**Needs attention** filters sustained observations: CPU at least 80% for 30 seconds, RSS growing by at least 100 MiB and 25% over 30 seconds, or three observed listener replacements within two minutes. Brief spikes do not trigger these hints. History stays in memory, covers foreground observations only, and resets after gaps. These are signals to inspect, not health checks or memory-leak diagnoses. No operating-system notifications or automatic recovery actions are sent.
 
-The ZIP is an unsigned local installation package. It needs no Node runtime. A `SHA256SUMS` file is included with each release for download verification. Marketplace publication is separate and requires upstream maintainer review.
+CPU is the recent average reported by macOS `ps` and may exceed 100%. Memory is summed resident memory (RSS), shown in decimal MB/GB; shared pages may be counted more than once, so totals are labelled **estimate**. Missing values show **—**. **Top** compares development services and is not an anomaly warning. See Apple's [ps documentation](https://github.com/apple-oss-distributions/adv_cmds/blob/main/ps/ps.1) for measurement definitions.
 
-### Build from source
+## Install from source
 
-Use Node 20.19+ on the 20.x line, or Node 22.12+ (Node 22 or 24 recommended).
+The service dashboard on this branch is in development. The published [v0.1.0 ZIP](https://github.com/DarinRowe/run-deck/releases/tag/v0.1.0) contains the earlier command launchpad; build this source to use the dashboard.
+
+Use Node 20.19+ on the 20.x line, or Node 22.12+ (Node 22 or 24 recommended):
 
 ```sh
-git clone https://github.com/DarinRowe/run-deck.git
-cd run-deck
 npm ci
 npm run build
 ```
 
-Load the source `run-deck` folder using **Extensions → Load Unpacked**. Rebuild and click **Reload** after changing source.
+Load the generated `dist/` folder in Muxy. Follow [Load or reload that build](docs/MUXY-DEVELOPMENT.md#2-load-or-reload-that-build) for first installation, existing installations, and verification after rebuilding.
 
-There is no default keyboard shortcut to conflict with your existing bindings. Assign one in Muxy if desired.
+Tested in Muxy 1.6.0. Node is required only for building; the installed panel uses vanilla JavaScript and macOS utilities.
 
-## Use
+## Consent and scope
 
-- **Add command:** save a name, shell command, directory relative to the active worktree, and optional expected port.
-- **Import scripts:** inspect the worktree's `package.json` and select a script. Nothing is installed or executed during discovery. npm, pnpm, Yarn, and Bun lockfiles select the command prefix.
-- **Launch:** open a Muxy terminal after Muxy's normal execution consent. Output stays in that terminal.
-- **Terminal:** focus the exact associated terminal.
-- **Interrupt:** after confirmation, send Ctrl+C to the verified associated pane. This interrupts its current foreground command; it does not guarantee the original service has stopped.
-- **Inspect ports:** run one bounded `lsof` request on the current execution host. No automatic rescans. Results show their snapshot time and are capped at 200 rows.
-- **Forget terminal:** remove the association without stopping any process. Check Muxy's background sessions before launching again.
-- **Remove:** delete the saved command only. Its terminal and processes are unchanged.
+Muxy asks before executing a scan or a stop command. To avoid repeated scan prompts, choose **Allow & remember** for the read-only inspection. Muxy remembers that exact scan; stopping a process uses a separate command. Cancelling or failing a scan pauses live checks, and old results are marked stale with actions disabled. **Refresh** retries once; **Resume live** re-enables the timer. If an automatic request takes focus for consent, live mode pauses after that request to avoid repeated prompts. Muxy does not expose whether a grant was remembered; the panel explains how to resume.
 
-The UI supports English and Simplified Chinese and follows Muxy's light/dark theme.
+Before the first default browser opening, a confirmation shows the execution host so you can confirm it is this Mac or has appropriate port forwarding. That choice is remembered for the host’s current boot session. Muxy’s extension interface does not reliably expose whether execution is local or remote, so Run Deck does not guess. An explicitly entered custom URL needs no extra host confirmation.
 
-### Status has a precise meaning
+Services are discovered on the current **execution host**. Native inspection currently requires macOS; a Linux SSH host returns an explicit error. TCP listeners are snapshots, not health checks, and non-listening jobs are outside this view.
 
-**Terminal open** means a linked terminal exists. A terminal can remain open after a command finishes. **Port listening** means a listener was present at inspection time, not that this command owns it or is healthy. **Terminal unavailable** can mean closed, detached, or absent from the current host layout; it does not prove the process stopped.
+## What Stop does
 
-After an ambiguous launch response or interrupted save, Run Deck requires you to review the terminal and explicitly forget the association before retrying. It never silently retries a launch.
+Stop rechecks the host boot identity, current user, root PID, complete descendant membership, each process’s start time and executable, and the complete listening-port set after Muxy consent. It rechecks each identity again before sending `SIGTERM` to that positive PID. There is no process-group signal or `SIGKILL`. Trees with more than 64 processes, incomplete identities, other users’ processes, or known app/system members cannot be stopped here. Processes outside the current worktree require an additional confirmation.
 
-### Workspace and local-host behavior
+Restart is available only when a live launch marker matches a saved Run Deck command in this worktree. Directories, terminal titles, and port numbers never establish that association. A final preflight after startup consent checks that the old identities are gone and ports are still free. An uncertain launch is never retried automatically. External services remain inspectable and stoppable when verified; their unknown commands are not guessed.
 
-Commands execute in the **active Muxy workspace**. In an SSH workspace, Muxy executes commands remotely. Run Deck does not claim it can force execution onto the Mac: the currently exposed host interface does not provide that guarantee. Port inspection uses macOS `/usr/sbin/lsof`; other remote operating systems are unsupported. Opening `localhost` requires explicit confirmation and targets the Mac; remote services need forwarding.
+macOS does not provide an atomic process-handle signal through this interface. Identity and membership checks reduce risk but cannot prevent every scheduling race or track detached/reparented workers. Supervisors can restart processes later. Run Deck reports the immediate verification result; it does not automatically restart failed services. A terminal link remains separate from service health.
 
-Saved commands are scoped by project and worktree IDs. Directories must stay inside the worktree; Muxy also checks symlinks. Do not put secrets directly into saved command text. Use your shell's existing environment or project tooling instead.
+## Permissions and privacy
 
-## Permissions
-
-| Permission | Use |
+| Permission | Purpose |
 | --- | --- |
-| `panels:write` | Open and toggle the Run Deck panel. |
-| `projects:read`, `worktrees:read` | Resolve the current worktree and isolate saved commands. |
-| `storage:read`, `storage:write` | Store commands and terminal associations in Muxy's private extension storage. |
-| `tabs:read`, `tabs:write` | Check, launch and focus associated terminals. |
-| `panes:read`, `panes:write` | Verify the pane exists and send Ctrl+C after confirmation. |
-| `commands:exec` | Run the explicit, read-only port inspection. |
-| `files:read` | Read root package scripts and lockfile names on request. |
-| `browser:write` | Open the user-selected localhost URL in Muxy's browser. |
+| `panels:write` | Show the service panel. |
+| `projects:read`, `worktrees:read` | Identify the active worktree and label its services. |
+| `commands:exec` | Inspect listener trees and resources; stop verified processes for user-requested Stop/Restart. |
+| `storage:read`, `storage:write` | Save commands, terminal links, custom URLs, and browser-host choices. |
+| `tabs:read`, `tabs:write` | Start commands in Muxy terminals and revisit their output. |
+| `files:read` | Discover package scripts and the package manager. |
+| `browser:write` | Open the selected service URL. |
 
-No analytics, external network requests, telemetry, remote code loading, uploaded output, or automatic command execution. Commands and associations live in `muxy.storage`; language preference is local to the webview. No permissions are self-granted.
+No telemetry, uploaded process data, external font downloads, or remote code loading. Inspection uses a temporary private file that is removed when the scan finishes. Launch markers are extracted on the host; full process arguments and environments are not sent to the panel. Each saved launch has a foreground shell wrapper for identity tracking; there is no daemon, background extension runtime, or copied terminal-log buffer. Custom URLs and saved command text stay in Muxy’s extension storage; avoid putting credentials in commands or URLs.
 
 ## Development
 
 ```sh
 npm ci
 npm run check
+npm run dev
 ```
 
-`npm run dev` serves the source for development. Open `/tests/preview.html` for an isolated, fake-host UI preview: it never runs shell commands. The test harness is excluded from `dist/`. Screenshot fixtures use synthetic names and paths. Listing screenshots are of this actual UI with a simulated Muxy interface, not proof of native integration.
+Open `/tests/preview.html` on the development server for the real UI with synthetic data. Add `?theme=light`, `?empty=1`, or `?error=1` to exercise common states. The preview never executes shell commands.
 
-`npm run check` runs the tests, production build, and distribution checks. GitHub Actions runs it on Node 20.19, 22, and 24.
+`npm run check` runs model/controller tests, a production build, and distribution assertions. On macOS it also starts disposable multiport servers and worker trees, verifies refusal of changed identities/membership, stops those trees, restarts a tracked launch, and checks occupied-port refusal. CI defines Node 20.19/22/24 checks and a separate macOS integration job.
 
-See [CONTRIBUTING.md](CONTRIBUTING.md), [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/VALIDATION.md](docs/VALIDATION.md), and [RELEASE.md](RELEASE.md).
-
-## Contributing
-
-Bug reports and focused pull requests are welcome. Please use English for issues, pull requests, and documentation when possible; the interface also supports Simplified Chinese. Read the [contribution guide](CONTRIBUTING.md) for setup, verification, and scope.
-
-## Marketplace submission
-
-Submit this source folder as `extensions/run-deck/` in a fork of [muxy-app/extensions](https://github.com/muxy-app/extensions). The official pipeline builds and signs `dist/` after maintainer approval; this is not an npm package. Follow [Muxy's contribution guide](https://muxy.app/docs/extensions/contributing).
+Read [Contributing](CONTRIBUTING.md), [Architecture](docs/ARCHITECTURE.md), [Validation](docs/VALIDATION.md), and the [release workflow](RELEASE.md).
 
 ## License
 
 [MIT](LICENSE) © 2026 DarinRowe.
-
-## 中文
-
-Run Deck（运行台）把当前工作区的常用开发命令集中起来：保存命令、导入 package.json 脚本、启动和定位 Muxy 终端、确认后发送 Ctrl+C、按需检查端口。没有 Python、辅助进程或后台轮询。命令输出保留在 Muxy 终端中。
-
-终端打开不等于服务健康，端口有人监听不等于归这条命令所有。关闭面板不停止服务；移除命令或解除关联也不停止进程。SSH 工作区在远端执行；第一版不是完整进程监管器，没有自动重启、退出码追踪和完成通知。
