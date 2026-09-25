@@ -1,0 +1,55 @@
+--- a/src/main.js
++++ b/src/main.js
+@@ -23,6 +23,17 @@
+ let lastFocusRefresh = 0;
+ let activeActions = 0;
+ const cards = new Map();
++const closedDetails = new Map();
++function closeDetails(card) {
++  const parts = card.details;
++  if (!parts) return;
++  parts.body.remove(); parts.service = null; parts.urlOptions.open = false;
++  closedDetails.delete(card); closedDetails.set(card, parts.rows.size);
++  while (closedDetails.size > 8 || [...closedDetails.values()].reduce((sum, rows) => sum + rows, 0) > 256) {
++    const oldest = closedDetails.keys().next().value;
++    closedDetails.delete(oldest); oldest.details = null;
++  }
++}
+ const commands = api ? new Launchpad(api, change => {
+   if (change?.contextChanged) {
+     if (!notice.hidden) notice.hidden = true;
+@@ -236,7 +247,7 @@
+   card.parts = { name, projectTag, address, source, alerts, trend, line, terminal, restart, cpu, memory, open, stop, summary, detail };
+   detail.addEventListener('toggle', () => {
+     if (detail.open && card.service) updateDetails(card);
+-    else if (card.details) { card.details.body.remove(); card.details = null; }
++    else closeDetails(card);
+   });
+   return card;
+ }
+@@ -278,13 +289,15 @@
+   });
+   urlOptions.append(urlSummary, urlForm);
+   detailBody.append(metadata, processTree, restriction, urlOptions); detail.append(detailBody);
+-  return { body: detailBody, metadataCells, treeTitle, treeColumns, treeList, rows: new Map(), restriction, url, urlSummary, urlField, urlHint, openCustom };
++  return { body: detailBody, metadataCells, treeTitle, treeColumns, treeList, rows: new Map(), restriction, url, urlOptions, urlSummary, urlField, urlHint, openCustom };
+ }
+ 
+ function updateDetails(card) {
+   if (!card.parts.detail.open || card.hidden || (card.service.restriction === 'protected' && !system.open)) return;
+   const service = card.service;
++  closedDetails.delete(card);
+   const p = card.details ||= makeDetails(card);
++  if (p.body.parentNode !== card.parts.detail) card.parts.detail.append(p.body);
+   property(p.openCustom, 'disabled', monitor.state.busy.has(service.id) || monitor.state.status !== 'ready');
+   if (p.service === service && p.language === language) return;
+   if (!p.service) p.url.value = service.url || `http://localhost:${service.ports[0].port}`;
+@@ -327,7 +340,7 @@
+   const positions = new Map();
+   for (const [id, card] of cards) if (!ids.has(id)) {
+     recoverFocus ||= card.contains(document.activeElement);
+-    card.remove(); cards.delete(id);
++    closedDetails.delete(card); card.details = null; card.service = null; card.remove(); cards.delete(id);
+   }
+   for (const service of services) {
+     let card = cards.get(service.id);

@@ -1,33 +1,64 @@
 # Architecture
 
-Run Deck is a single Muxy panel with vanilla ES modules. It does not declare `background`; enabled-but-closed operation needs no extension-owned host process. Muxy owns the terminal sessions and process lifecycle.
+Run Deck is one Muxy panel built with vanilla ES modules. Muxy owns execution consent and terminal sessions. The extension declares no background script or runtime npm dependencies.
 
-- `model.js`: bounded validation, storage decoding, worktree identity, terminal state and lsof parsing. No host calls.
-- `controller.js`: host operations, serialized per-command mutations, bounded event map, persistent associations and context checks.
-- `main.js`: accessible DOM, keyed command cards, modal form, deliberate actions and bilingual text.
-- `style.css`: Muxy theme tokens and sizing; no production font downloads or theme-color duplication.
+## Modules and interfaces
+
+`ServiceMonitor` in `src/services.js` owns service state. Callers read `state` and use `refresh({ quiet, signal })`, `invalidate()`, `open(id, options)`, `terminal(id)`, `stop(id, confirmOutsideProject)`, `restart(id, confirmOutsideProject)`, and `dispose()`. Invalidation immediately disables actions and discards obsolete in-flight results without starting another scan. An optional abort signal stops subsequent inspection phases and rejects cancelled results; it cannot cancel an already dispatched host request. It owns context validation, inspection coalescing, stale state, action exclusion, browser-host confirmation, remembered URLs, and post-stop verification. The DOM never derives signal targets or parses process output.
+
+The injected Muxy interface is the production/test seam. A fake adapter implements the same execution, storage, project, worktree, tab, and browser shapes. Native macOS tests execute the same inspection, launch, and stop generators used in production.
+
+`src/processes.js` owns the snapshot protocol, parsing, process-tree grouping, and guarded shell commands. A scan collects listeners, process identity/ancestry/resources, listener working directories, and Run Deck markers. The host filters arguments to PID/token pairs before returning them; full arguments and environments never enter the panel. Missing resource values remain null. Metrics do not participate in process identity.
+
+Grouping starts at an exact saved launch marker, otherwise the highest listening ancestor with the same owner. Observed descendants contribute CPU and RSS; RSS totals are estimates because shared pages may be counted twice. Sibling listeners share a row only through an observed root. A matching directory or port never establishes launch ownership. An ancestor app may explain an external service's source but grants no terminal or restart capability.
+
+Listener assignment precedes the 256-member display traversal. Known ports and listener identities therefore survive even when their process rows fall beyond that cap. Truncated trees have unknown aggregate CPU/RSS and remain ineligible for Stop/Restart; an unrelated complete tree remains actionable.
+
+`Launchpad` in `src/controller.js` owns scoped saved commands, persisted launch/restart intent, uncertain results, and terminal links. Each launch uses a foreground `/bin/sh` wrapper tagged with a fresh UUID. Its child runs the saved command through `/bin/sh` with stdin preserved through a temporary descriptor saved before backgrounding and closed in both processes afterward. This also works when the host's `/bin/sh` is dash. Restart verifies the saved token and command before stopping, then checks storage/context again before launching once. The old terminal is retained. Guarded startup checks old identities and ports again after consent.
+
+Context preflight rechecks disposal and the context version after asynchronous host reads; workspace events invalidate older responses even when their payload still describes the previous workspace. Ordinary saved-command writes do not change that context version. Service actions similarly reject an inspection invalidated during preflight. Restart rollback restores only the state of its own still-current token, preserving command fields edited while stopping. A terminal request already dispatched before disposal still records its returned association.
+
+Successful restart uses the revalidated stored record, preserving metadata edited while the old service stops. Forget rereads storage after confirmation, preserves current command fields, and rejects a removed or changed association. Terminal navigation compares the service's observed launch token with the cached association and verifies that association against storage before switching tabs. These checks narrow stale-read windows; they do not provide a cross-window storage transaction.
+
+Saved-command writes invalidate refresh reads both before dispatch and after successful completion, including reads started while the write was pending. A terminal reply rereads storage and updates only its own still-current opening association, preserving current metadata. Neither a late success nor failure restores a removed record or overwrites a forgotten/replaced/linked association.
+
+Launchpad also owns host-event invalidation. Only tab events that could affect a recorded terminal read the tab list; title-only changes produce no rendering notification. These events never reload saved commands. `setVisible(false)` defers event reads until the next foreground transition, with visibility checks between asynchronous automatic read phases to avoid starting the saved-command read fanout after hiding. Concurrent refresh callers share a drain of pending reads, including a workspace change during a read. Automatic inspection uses `refresh({ cached: true })`; manual refresh and action preflights still read fresh state, including edits from another panel.
+
+Read-only script discovery uses `discover({ signal })` independently of mutation exclusion. The command dialog owns that signal and cancels on dismissal; discovery checks cancellation, disposal, and context between reads. Dispatched host requests may finish, but cancelled discovery does not issue the next read. Dialog loading also checks ownership before rendering, and an obsolete load cannot hold live checks after the dialog closes.
+
+Discovery retains the workspace event version for its entire operation, including a switch that returns to the same path. Its context preflight checks cancellation and invalidation between project and worktree reads. Service actions retain the observation generation across confirmation and preflight; an invalidated confirmation cannot authorize an old target. Open and Terminal await an already-running scan and reject its failed or obsolete state.
+
+Disposed service monitors reject late action targets before prompting. A remembered-browser-host lookup also checks invalidation before requesting confirmation. Automatic refresh requests that meet an active Stop remain the foreground scheduler's responsibility; only explicit refresh requests enter the post-stop queue, so an automatic scan cannot escape visibility cancellation through that queue.
+
+`src/observation.js` contains two stateful modules. `ForegroundChecks` owns periodic, invalidated, and manual checks through one scheduler. It schedules a five-second timeout after each completed periodic inspection, never overlapping requests. `invalidate(delay)` coalesces workspace, focus, and post-launch requests while hidden or held; `refresh()` explicitly requests a full check and awaits an in-flight periodic check first. Visibility loss, dialogs, actions, and disposal cancel the next timeout. Focus loss during an automatic request aborts its signal and disables further requests because a consent sheet may have appeared. Explicit refresh is not cancelled on focus loss. Errors also pause live checks. The host does not expose remembered-grant state. An injected clock makes this exact scheduling behavior testable.
+
+`ServiceHistory` holds bounded foreground observations: at most 200 service keys, 16 samples per key, and 60 seconds of resource history. CPU ≥80% over 30 seconds and monotonically growing RSS ≥100 MiB and ≥25% over 30 seconds produce inline hints. Three observed listener-identity changes within 120 seconds produce a replacement hint; only the latest three replacement timestamps are retained. Samples are at least four seconds apart; a gap over 15 seconds resets history. Intentional Stop/Restart clears that service's record. History serializes its retained listener identity so parser substrings cannot keep old full-host scan buffers alive in engines that share string backing storage. Callers still pass the ordinary listener identity; this lifetime rule stays inside the history module. Nothing is persisted or notified outside the panel.
+
+History keys include sorted listening addresses as well as ports, so independent bindings on the same port do not mix samples. Sustained hints use the nearest sample spanning at least 30 seconds from the latest sample, tolerating inspection time added to the five-second delay. Custom URL keys also include normalized bindings; legacy keys are read only when unambiguous in the current snapshot. Writes to the shared URL map are serialized within one monitor, and a failed write does not block later saves. This is not cross-window transactional storage.
+
+`src/main.js` renders the overview, filters, keyed rows, details, and command dialog. `src/i18n.js` supplies English and Chinese copy; `src/style.css` uses Muxy theme tokens. Rows, expanded details, and keyboard focus survive ordinary refresh/reordering. Sort order is remembered. The default view prioritizes the current worktree; app/system processes stay collapsed.
+
+Render notifications coalesce per animation frame and stop while hidden. Cards cache their displayed state, and DOM attributes/properties are written only when their value changes. Details allocate their body only when expanded and release it on close; while open, process identities key reusable table rows and metadata cells update in place. Refresh preserves an edited URL. Search and unchanged refreshes allocate no new elements. Production assets are minified; no framework or runtime dependency is added.
 
 ## Invariants
 
-1. Launch intent is persisted before starting a command. An uncertain result blocks relaunch until the user reviews and forgets its association.
-2. Commands are indexed under `v1/<projectID>/<worktreeID>/<commandID>`. Each command has its own storage key, avoiding whole-list overwrites.
-3. Long-lived identities use host-generated tab/pane IDs. No PID or port is used to stop a process.
-4. Ctrl+C is allowed only after confirmation and fresh context/tab/pane checks. It affects the terminal's current foreground program; that program may have changed since launch.
-5. Port snapshots are separate from command identity and include a timestamp. No inferred ownership or health.
-6. Read-only discovery never executes package scripts or installs packages. File inspection is limited to package metadata, with a 256 KiB package.json limit.
-7. No periodic timer, resource charts, output streaming, terminal emulation, service worker, background script or hidden webview.
-8. Launches and port requests do not retry automatically. Rapid clicks are coalesced within this panel. Muxy storage does not expose compare-and-swap; cross-window transactional launches are not claimed.
+1. A service is an observed TCP listener tree, not proof of application health or an open terminal.
+2. Stop requires complete verified membership (at most 64 same-owner processes), no protected members, and a complete port set. The shell verifies host, membership, every identity, and ports before signalling, then rechecks each identity immediately before its positive-PID TERM. If a previous TERM has already ended a child, a missing or zombie child is skipped without signalling; a changed live identity still aborts. No process-group signal or force kill exists.
+3. Verification distinguishes full exit, an original process remaining, and another listener occupying an affected port. Either of the latter blocks restart.
+4. Restart/Terminal require an exact launch-token association in the current worktree. Restart preflight runs after Muxy's startup consent and cancels if old identities remain or ports are occupied.
+5. URLs allow only HTTP/HTTPS without credentials. Default host mapping requires a remembered user choice; explicit custom addresses are separate.
+6. Failed/denied scans retain stale results with actions disabled. Quiet successful scans keep rows stable. Concurrent scans coalesce; actions await an in-flight quiet scan before selecting a target.
+7. Automatic inspection only runs while visible and idle. Focus fallback cannot reopen a cancelled automatic consent. A host/worktree change pauses live mode and requests one new inspection, deferred while hidden or held.
+8. Intent is saved before opening a terminal. An ambiguous response is retained for review and never automatically retried. Read-only script discovery never starts a command.
 
-## Bounds
+## Bounds and costs
 
-100 saved commands per worktree; 80-character names; 4096-character commands; 1024-character relative directory paths; 256 remembered terminal events; 200 port rows; one port request in flight; 5-second request timeout. Listener capture is still subject to the host's independent 10 MiB stdout/stderr caps before our parser runs. The UI owns no terminal log buffer. One dismiss timer exists only while a toast is visible.
+A scan has a five-second timeout; guarded stop plus verification has fifteen seconds. Each scan is one host execution request with batched `lsof`/`ps` queries. Parsing caps output at 2 MiB, process identity rows at 6,000, listeners at 200, ports per listener at 32, and addresses per port at 16. Group display caps descendants at 256. Partial trees and limited snapshots cannot be stopped. Host stdout/stderr limits apply independently.
 
-## Host contract details
+Saved commands and custom browser addresses are each capped at 100 per scope; command text and URLs at 4,096 characters, directories at 1,024. History is in-memory and bounded. There is no daemon, persistent helper file, terminal emulation/output buffer, or hidden webview. A foreground shell remains alive per tracked launch. The UI's serialized timer pauses when hidden; no background polling is claimed.
 
-`tabs.open` receives a **relative** `directory`, because Muxy resolves it inside the worktree. Absolute paths are not interchangeable. `tabs.open` returns a tab ID; a pane ID is learned from enriched events and never guessed from titles. The pane event can arrive before or after the open response. If a verified pane ID cannot be recovered, interrupt is refused and the user can press Ctrl+C in the terminal directly.
+## Host limits
 
-An app session might restore terminal IDs differently. Missing associations are shown explicitly and never rebound by name. Panel state is rehydrated after recreation. No exact process exit status or background-detach mapping is currently exposed through the interface used here.
+`exec` follows Muxy's active execution host, possibly SSH. The available project interface has no reliable host-kind flag. Inspection returns hostname and boot identity; the UI shows the hostname only when confirming default browser mapping once per boot. The main view omits redundant host/project labels. Native inspection requires macOS; Linux execution hosts report an explicit error. No local override or automatic port forwarding is claimed.
 
-## Verification seam
-
-Tests call the same controller as the UI using a fake host that implements the documented shapes. The browser harness imports the real production UI and model. Neither substitutes for a final Muxy-native smoke test, especially consent prompts, event ordering and WebKit behavior.
+Identity checks and signals are not atomic on macOS. A new worker can appear after membership verification; detached/reparented workers cannot be reliably attributed. Muxy storage also has no cross-window launch transaction. These are limits of the available host interfaces, not inferred guarantees.

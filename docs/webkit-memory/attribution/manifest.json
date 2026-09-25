@@ -1,0 +1,216 @@
+{
+  "environment": {
+    "machine": "Apple M1 Pro / 16 GiB",
+    "macOS": "15.4.1",
+    "WebKit": "20621.1.15.11.10"
+  },
+  "base": "Historical 35-minute soak frozen build, not current HEAD",
+  "files": [
+    {
+      "path": "src/services.js",
+      "bytes": 9952,
+      "sha256": "816ba266a7b6c7dd72d32e8b3a782ed4b218fceb9760462aeaebbbacfb12c4ff"
+    },
+    {
+      "path": "src/observation.js",
+      "bytes": 5106,
+      "sha256": "a6a7b050e1114d4d28f28d3430f921d09c3072bf4024e569b6bf26052105267f"
+    },
+    {
+      "path": "src/controller.js",
+      "bytes": 12098,
+      "sha256": "7d718ca5177dd6051d83c28129869995f9645c7bbcfda1f9d82150f0e44c2d95"
+    },
+    {
+      "path": "src/main.js",
+      "bytes": 33215,
+      "sha256": "8c500942922d04442315e26156e48d5581bd3345d6ede593f98c63f38b99d935"
+    },
+    {
+      "path": "src/style.css",
+      "bytes": 13611,
+      "sha256": "eaa2e5210c07d0b0e82f3fe931c195b8ff4064ff74a972db644acb2779477bf7"
+    },
+    {
+      "path": "src/processes.js",
+      "bytes": 13371,
+      "sha256": "f121b4b3b1383c3cbc2993f1302c6094c550a01e704bf43d7a878699eea95bc9"
+    },
+    {
+      "path": "src/model.js",
+      "bytes": 3704,
+      "sha256": "b55c2a6e5a25fa57a0d78d3eb90b75b6f29ac1186eee9547a78d54b9f40e33f1"
+    },
+    {
+      "path": "src/i18n.js",
+      "bytes": 10887,
+      "sha256": "c7fbfa424a7880875fc3aa72a287e36cdbaacf2793babc0bc8fb918cc1b5d8a5"
+    },
+    {
+      "path": "dist/assets/index-BKcCu7gY.js",
+      "bytes": 58324,
+      "sha256": "a04f8596f081429dd89f61a315a42c4761fee7a05cfe9596c34f53b88cf73115"
+    },
+    {
+      "path": "dist/assets/index-BIh1fYtv.css",
+      "bytes": 12159,
+      "sha256": "4c1615c6fdd8017e9e0a6a6acad3dd9fec3722a67c1f58866106c0cd2f1ef411"
+    },
+    {
+      "path": "dist/assets/run-deck.svg",
+      "bytes": 394,
+      "sha256": "a9ba3e615deb3fe968ce00a71329e3e950e5a5a7ed74078cee8fc1361a9024cf"
+    },
+    {
+      "path": "dist/panel/index.html",
+      "bytes": 597,
+      "sha256": "72085e2e546678e83997f54ff2e7788102542f90cfb46137bad34f1181139808"
+    },
+    {
+      "path": "blank.html",
+      "bytes": 106,
+      "sha256": "6f14eab8e7594638a38e24fe52bbbebef7436a50a2159eb70a14dd426aa44637"
+    },
+    {
+      "path": "tests/fake-muxy.mjs",
+      "bytes": 2335,
+      "sha256": "49fc985dccf87190a352ecfd047eaeda8d772217fc1dad277bf130c6318091a8"
+    },
+    {
+      "path": "tests/fake-services.mjs",
+      "bytes": 2086,
+      "sha256": "fdb4520179a545509ab05c866ffb7c692feba9670acc02cf010dcdbe4a502613"
+    },
+    {
+      "path": "tests/preview.mjs",
+      "bytes": 5236,
+      "sha256": "fc32a2aaf73cf73ff56d6a98282c4333dd8d3f8c8899c0b8c6642ca299b77813"
+    },
+    {
+      "path": "tests/preview.html",
+      "bytes": 268,
+      "sha256": "28d7a9b5cbdb85eca1da8f77bf9807986d583cbb55b62674549a05fcedf72c25"
+    },
+    {
+      "path": "tests/webkit-soak.mjs",
+      "bytes": 4660,
+      "sha256": "49d21be24162f9ee83b07527f2758db589f5996fba622ae025173e2644a9b852"
+    }
+  ],
+  "variants": {
+    "site": [
+      {
+        "path": "dist/assets/index-BKcCu7gY.js",
+        "sha256": "a04f8596f081429dd89f61a315a42c4761fee7a05cfe9596c34f53b88cf73115"
+      },
+      {
+        "path": "tests/webkit-soak.mjs",
+        "sha256": "49d21be24162f9ee83b07527f2758db589f5996fba622ae025173e2644a9b852"
+      },
+      {
+        "path": "src/main.js",
+        "sha256": "8c500942922d04442315e26156e48d5581bd3345d6ede593f98c63f38b99d935"
+      }
+    ],
+    "site-live": [
+      {
+        "path": "dist/assets/index-BKcCu7gY.js",
+        "sha256": "a04f8596f081429dd89f61a315a42c4761fee7a05cfe9596c34f53b88cf73115"
+      },
+      {
+        "path": "tests/webkit-soak.mjs",
+        "sha256": "094342e6468d0e3660f73bb57faf62bdc0ce1f76538a368afa67ba53ca634792"
+      },
+      {
+        "path": "src/main.js",
+        "sha256": "8c500942922d04442315e26156e48d5581bd3345d6ede593f98c63f38b99d935"
+      }
+    ],
+    "site-no-form": [
+      {
+        "path": "dist/assets/index-Btnhj_ol.js",
+        "sha256": "1eaaf2df1438c51a07573a3cc60e39b5b65a37e75966d2bf0a7c6fa70d9c128e"
+      },
+      {
+        "path": "tests/webkit-soak.mjs",
+        "sha256": "49d21be24162f9ee83b07527f2758db589f5996fba622ae025173e2644a9b852"
+      },
+      {
+        "path": "src/main.js",
+        "sha256": "00cf4aba90ec71c8605285fa6a5b9bc535c89b1e4f1621023ba0f3c19da280ec"
+      }
+    ],
+    "site-row-pool": [
+      {
+        "path": "dist/assets/index-CDjfBpo4.js",
+        "sha256": "80b16bde47e3218ce6238ba7fccd0224b0ac0a2d4ae593662435b68d51a8e916"
+      },
+      {
+        "path": "tests/webkit-soak.mjs",
+        "sha256": "49d21be24162f9ee83b07527f2758db589f5996fba622ae025173e2644a9b852"
+      },
+      {
+        "path": "src/main.js",
+        "sha256": "e292d0896f9fb2e216e5dbef72175923d1d6c2f899f2133d4f0020a35c46ec93"
+      }
+    ],
+    "site-detail-cache": [
+      {
+        "path": "dist/assets/index-D4MdwheW.js",
+        "sha256": "c099571bbece423d239de9798ea365cd6b36ad0e2fe5515109096de719f48fec"
+      },
+      {
+        "path": "tests/webkit-soak.mjs",
+        "sha256": "49d21be24162f9ee83b07527f2758db589f5996fba622ae025173e2644a9b852"
+      },
+      {
+        "path": "src/main.js",
+        "sha256": "c046c25049b65ce7205d7d959dc3ee5d034f218d866ea5ce05bdb50bbb2e00d1"
+      }
+    ],
+    "site-attached-cache": [
+      {
+        "path": "dist/assets/index-Fe6xvO7J.js",
+        "sha256": "ce7f88c68c137b5902d91a10adf8e81a839f87435416a45423c6637031a8afa2"
+      },
+      {
+        "path": "tests/webkit-soak.mjs",
+        "sha256": "cc1ea0d381387656042f7c7fbd46059df9796127f0c4bbe5610874e616e140d5"
+      },
+      {
+        "path": "src/main.js",
+        "sha256": "237e5b81bc9f7a5f3d372e4bbd72f1e3ceff5351769fc50a15f75a841c1a5261"
+      }
+    ],
+    "site-minimal": [
+      {
+        "path": "tests/webkit-soak.mjs",
+        "sha256": "648946a9ef8c83c599f6a1a1e95642894b9ea62fb069363a10561e6434f8cfd5"
+      }
+    ],
+    "site-minimal-live": [
+      {
+        "path": "tests/webkit-soak.mjs",
+        "sha256": "86149fb80d9891b43b28edb7ceab50a6889779541d2d6ab9932b5fb33cfdd9d6"
+      }
+    ]
+  },
+  "hosts": [
+    {
+      "label": "original source",
+      "sha256": "903ba5dcb323ad7dae3d76ada46a389a1d20bdcb78c1e710df7bef9adcc147c4"
+    },
+    {
+      "label": "original executable",
+      "sha256": "e1e0dbc3add2aaccdc13debf5d62dcd2628fa6f4261bbd0fad06aab480423562"
+    },
+    {
+      "label": "live query source",
+      "sha256": "eeb9b34aa018aaaac80e651f94c752040d0218c69ae5bc6228a326f548ff5d6e"
+    },
+    {
+      "label": "live query executable",
+      "sha256": "4b37efaa805892f05f3c5f62d835d9a4b642d1fa769538d83d21b557a670a25d"
+    }
+  ]
+}

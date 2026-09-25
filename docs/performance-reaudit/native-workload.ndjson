@@ -1,0 +1,52 @@
+{"run": "1-before", "pid": 95006, "seconds": 120, "timestamp": "2026-09-25T05:02:17Z", "type": "host", "url": "http://127.0.0.1:5190/before/tests/retention.html"}
+{"run": "1-before", "cycles": 0, "documentHidden": false, "elapsed_s": 0.002, "keys": 0, "timestamp": "2026-09-25T05:02:17Z", "type": "phase"}
+{"run": "1-before", "cycles": 200, "documentHidden": false, "elapsed_s": 2.3060000000000005, "keys": 200, "timestamp": "2026-09-25T05:02:20Z", "type": "sample"}
+{"run": "1-before", "cycles": 400, "documentHidden": false, "elapsed_s": 4.557, "keys": 200, "timestamp": "2026-09-25T05:02:22Z", "type": "sample"}
+{"run": "1-before", "cycles": 600, "documentHidden": false, "elapsed_s": 6.837, "keys": 200, "timestamp": "2026-09-25T05:02:24Z", "type": "sample"}
+{"run": "1-before", "cycles": 800, "documentHidden": false, "elapsed_s": 9.119, "keys": 200, "timestamp": "2026-09-25T05:02:26Z", "type": "sample"}
+{"run": "1-before", "appActive": true, "error": "", "page": {"cards": 0, "focused": true, "hidden": false, "ready": "complete"}, "timestamp": "2026-09-25T05:02:27Z", "type": "heartbeat", "windowKey": true, "windowOcclusion": 8194, "windowVisible": true}
+{"run": "1-before", "cycles": 1000, "documentHidden": false, "elapsed_s": 11.411, "keys": 200, "timestamp": "2026-09-25T05:02:29Z", "type": "sample"}
+{"run": "1-before", "cycles": 1200, "documentHidden": false, "elapsed_s": 13.717000000000002, "keys": 200, "timestamp": "2026-09-25T05:02:31Z", "type": "sample"}
+{"run": "1-before", "cycles": 1200, "documentHidden": false, "elapsed_s": 13.748, "keys": 200, "timestamp": "2026-09-25T05:02:31Z", "type": "idle"}
+{"run": "1-before", "appActive": true, "error": "", "page": {"cards": 0, "focused": true, "hidden": false, "ready": "complete"}, "timestamp": "2026-09-25T05:02:37Z", "type": "heartbeat", "windowKey": true, "windowOcclusion": 8194, "windowVisible": true}
+{"run": "1-before", "appActive": true, "error": "", "page": {"cards": 0, "focused": true, "hidden": false, "ready": "complete"}, "timestamp": "2026-09-25T05:02:47Z", "type": "heartbeat", "windowKey": true, "windowOcclusion": 8194, "windowVisible": true}
+{"run": "1-before", "cycles": 1200, "documentHidden": false, "elapsed_s": 33.749, "keys": 200, "timestamp": "2026-09-25T05:02:51Z", "type": "finished"}
+{"run": "2-after", "pid": 95084, "seconds": 120, "timestamp": "2026-09-25T05:02:51Z", "type": "host", "url": "http://127.0.0.1:5190/after/tests/retention.html"}
+{"run": "2-after", "cycles": 0, "documentHidden": false, "elapsed_s": 0.001, "keys": 0, "timestamp": "2026-09-25T05:02:52Z", "type": "phase"}
+{"run": "2-after", "cycles": 200, "documentHidden": false, "elapsed_s": 2.32, "keys": 200, "timestamp": "2026-09-25T05:02:54Z", "type": "sample"}
+{"run": "2-after", "cycles": 400, "documentHidden": false, "elapsed_s": 4.599000000000001, "keys": 200, "timestamp": "2026-09-25T05:02:56Z", "type": "sample"}
+{"run": "2-after", "cycles": 600, "documentHidden": false, "elapsed_s": 6.883, "keys": 200, "timestamp": "2026-09-25T05:02:58Z", "type": "sample"}
+{"run": "2-after", "cycles": 800, "documentHidden": false, "elapsed_s": 9.156, "keys": 200, "timestamp": "2026-09-25T05:03:01Z", "type": "sample"}
+{"run": "2-after", "appActive": false, "error": "", "page": {"cards": 0, "focused": false, "hidden": false, "ready": "complete"}, "timestamp": "2026-09-25T05:03:01Z", "type": "heartbeat", "windowKey": false, "windowOcclusion": 8194, "windowVisible": true}
+{"run": "2-after", "cycles": 1000, "documentHidden": false, "elapsed_s": 11.454, "keys": 200, "timestamp": "2026-09-25T05:03:03Z", "type": "sample"}
+{"run": "2-after", "cycles": 1200, "documentHidden": false, "elapsed_s": 13.788, "keys": 200, "timestamp": "2026-09-25T05:03:05Z", "type": "sample"}
+{"run": "2-after", "cycles": 1200, "documentHidden": false, "elapsed_s": 13.818, "keys": 200, "timestamp": "2026-09-25T05:03:05Z", "type": "idle"}
+{"run": "2-after", "appActive": false, "error": "", "page": {"cards": 0, "focused": false, "hidden": false, "ready": "complete"}, "timestamp": "2026-09-25T05:03:11Z", "type": "heartbeat", "windowKey": false, "windowOcclusion": 8194, "windowVisible": true}
+{"run": "2-after", "appActive": false, "error": "", "page": {"cards": 0, "focused": false, "hidden": false, "ready": "complete"}, "timestamp": "2026-09-25T05:03:21Z", "type": "heartbeat", "windowKey": false, "windowOcclusion": 8194, "windowVisible": true}
+{"run": "2-after", "cycles": 1200, "documentHidden": false, "elapsed_s": 33.819, "keys": 200, "timestamp": "2026-09-25T05:03:25Z", "type": "finished"}
+{"run": "3-before", "pid": 95110, "seconds": 120, "timestamp": "2026-09-25T05:03:26Z", "type": "host", "url": "http://127.0.0.1:5190/before/tests/retention.html"}
+{"run": "3-before", "cycles": 0, "documentHidden": false, "elapsed_s": 0.001, "keys": 0, "timestamp": "2026-09-25T05:03:26Z", "type": "phase"}
+{"run": "3-before", "cycles": 200, "documentHidden": false, "elapsed_s": 2.3140000000000005, "keys": 200, "timestamp": "2026-09-25T05:03:28Z", "type": "sample"}
+{"run": "3-before", "cycles": 400, "documentHidden": false, "elapsed_s": 4.573, "keys": 200, "timestamp": "2026-09-25T05:03:30Z", "type": "sample"}
+{"run": "3-before", "cycles": 600, "documentHidden": false, "elapsed_s": 6.893, "keys": 200, "timestamp": "2026-09-25T05:03:33Z", "type": "sample"}
+{"run": "3-before", "cycles": 800, "documentHidden": false, "elapsed_s": 9.177, "keys": 200, "timestamp": "2026-09-25T05:03:35Z", "type": "sample"}
+{"run": "3-before", "appActive": true, "error": "", "page": {"cards": 0, "focused": true, "hidden": false, "ready": "complete"}, "timestamp": "2026-09-25T05:03:36Z", "type": "heartbeat", "windowKey": true, "windowOcclusion": 8194, "windowVisible": true}
+{"run": "3-before", "cycles": 1000, "documentHidden": false, "elapsed_s": 11.464, "keys": 200, "timestamp": "2026-09-25T05:03:37Z", "type": "sample"}
+{"run": "3-before", "cycles": 1200, "documentHidden": false, "elapsed_s": 13.804, "keys": 200, "timestamp": "2026-09-25T05:03:40Z", "type": "sample"}
+{"run": "3-before", "cycles": 1200, "documentHidden": false, "elapsed_s": 13.835, "keys": 200, "timestamp": "2026-09-25T05:03:40Z", "type": "idle"}
+{"run": "3-before", "appActive": true, "error": "", "page": {"cards": 0, "focused": true, "hidden": false, "ready": "complete"}, "timestamp": "2026-09-25T05:03:46Z", "type": "heartbeat", "windowKey": true, "windowOcclusion": 8194, "windowVisible": true}
+{"run": "3-before", "appActive": true, "error": "", "page": {"cards": 0, "focused": true, "hidden": false, "ready": "complete"}, "timestamp": "2026-09-25T05:03:56Z", "type": "heartbeat", "windowKey": true, "windowOcclusion": 8194, "windowVisible": true}
+{"run": "3-before", "cycles": 1200, "documentHidden": false, "elapsed_s": 33.836, "keys": 200, "timestamp": "2026-09-25T05:04:00Z", "type": "finished"}
+{"run": "4-after", "pid": 95203, "seconds": 120, "timestamp": "2026-09-25T05:04:00Z", "type": "host", "url": "http://127.0.0.1:5190/after/tests/retention.html"}
+{"run": "4-after", "cycles": 0, "documentHidden": false, "elapsed_s": 0.003, "keys": 0, "timestamp": "2026-09-25T05:04:00Z", "type": "phase"}
+{"run": "4-after", "cycles": 200, "documentHidden": false, "elapsed_s": 2.4400000000000004, "keys": 200, "timestamp": "2026-09-25T05:04:03Z", "type": "sample"}
+{"run": "4-after", "cycles": 400, "documentHidden": false, "elapsed_s": 4.77, "keys": 200, "timestamp": "2026-09-25T05:04:05Z", "type": "sample"}
+{"run": "4-after", "cycles": 600, "documentHidden": false, "elapsed_s": 7.136, "keys": 200, "timestamp": "2026-09-25T05:04:07Z", "type": "sample"}
+{"run": "4-after", "cycles": 800, "documentHidden": false, "elapsed_s": 9.46, "keys": 200, "timestamp": "2026-09-25T05:04:10Z", "type": "sample"}
+{"run": "4-after", "appActive": false, "error": "", "page": {"cards": 0, "focused": false, "hidden": false, "ready": "complete"}, "timestamp": "2026-09-25T05:04:10Z", "type": "heartbeat", "windowKey": false, "windowOcclusion": 8194, "windowVisible": true}
+{"run": "4-after", "cycles": 1000, "documentHidden": false, "elapsed_s": 11.776000000000002, "keys": 200, "timestamp": "2026-09-25T05:04:12Z", "type": "sample"}
+{"run": "4-after", "cycles": 1200, "documentHidden": false, "elapsed_s": 14.144, "keys": 200, "timestamp": "2026-09-25T05:04:14Z", "type": "sample"}
+{"run": "4-after", "cycles": 1200, "documentHidden": false, "elapsed_s": 14.175, "keys": 200, "timestamp": "2026-09-25T05:04:14Z", "type": "idle"}
+{"run": "4-after", "appActive": false, "error": "", "page": {"cards": 0, "focused": false, "hidden": false, "ready": "complete"}, "timestamp": "2026-09-25T05:04:20Z", "type": "heartbeat", "windowKey": false, "windowOcclusion": 8194, "windowVisible": true}
+{"run": "4-after", "appActive": false, "error": "", "page": {"cards": 0, "focused": false, "hidden": false, "ready": "complete"}, "timestamp": "2026-09-25T05:04:30Z", "type": "heartbeat", "windowKey": false, "windowOcclusion": 8194, "windowVisible": true}
+{"run": "4-after", "cycles": 1200, "documentHidden": false, "elapsed_s": 34.176, "keys": 200, "timestamp": "2026-09-25T05:04:34Z", "type": "finished"}

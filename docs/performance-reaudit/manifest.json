@@ -1,0 +1,11 @@
+{
+  "node": "22.22.2",
+  "nativeHost": "scripts/webkit-memory.swift with module import pointing at native-data-probe.mjs on a blank page",
+  "sampling": "proc_pid_rusage, 1 second",
+  "beforeObservationSHA256": "a6a7b050e1114d4d28f28d3430f921d09c3072bf4024e569b6bf26052105267f",
+  "afterObservationSHA256": "d3d49c499a2f2c7779a399a2a8561f3c834718ba6be2f7e2e140374377618352",
+  "productionFiles": {
+    "dist/assets/index-BxnseS8C.js": "e26616cfc7f228fe7bcb93e67b674f681d6f16c9fc13bb022ed8ec3028bad242",
+    "dist/assets/index-CNYntAVt.css": "794ad10fbaac4744527277e4d882e466f36f5417ab8150ccffba251f1091b338"
+  }
+}

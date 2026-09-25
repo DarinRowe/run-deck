@@ -1,0 +1,17 @@
+[
+  {
+    "name": "checkStarterClosedDuringRefresh",
+    "passed": false,
+    "error": "{\"fileListsAfterClose\":1,\"detachedDialogMutations\":3}"
+  },
+  {
+    "name": "checkStarterReopen",
+    "passed": false,
+    "error": "{\"stage\":\"list\",\"readyBeforeOldResponse\":false,\"error\":\"Cannot read properties of undefined (reading 'find')\",\"callsBeforeOldResponse\":{\"list\":1,\"stat\":0,\"read\":0},\"callsAfterOldResponse\":{\"list\":1,\"stat\":1,\"read\":1}}"
+  },
+  {
+    "name": "checkStarterResumesLive",
+    "passed": false,
+    "error": "Starter fixture did not settle"
+  }
+]

@@ -1,0 +1,42 @@
+[
+  {
+    "run": "1-before",
+    "cycles": 1200,
+    "activeSeconds": 13.748,
+    "peakFootprintMiB": 131.1112060546875,
+    "idleFootprintMiB": 30.626953125,
+    "idleRSSMiB": 202.75,
+    "documentHidden": false,
+    "errors": []
+  },
+  {
+    "run": "2-after",
+    "cycles": 1200,
+    "activeSeconds": 13.818,
+    "peakFootprintMiB": 137.0802001953125,
+    "idleFootprintMiB": 29.58013916015625,
+    "idleRSSMiB": 197.515625,
+    "documentHidden": false,
+    "errors": []
+  },
+  {
+    "run": "3-before",
+    "cycles": 1200,
+    "activeSeconds": 13.835,
+    "peakFootprintMiB": 143.28326416015625,
+    "idleFootprintMiB": 31.98651123046875,
+    "idleRSSMiB": 211.7265625,
+    "documentHidden": false,
+    "errors": []
+  },
+  {
+    "run": "4-after",
+    "cycles": 1200,
+    "activeSeconds": 14.175,
+    "peakFootprintMiB": 139.8145751953125,
+    "idleFootprintMiB": 41.06463623046875,
+    "idleRSSMiB": 223.234375,
+    "documentHidden": false,
+    "errors": []
+  }
+]

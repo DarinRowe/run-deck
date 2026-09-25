@@ -13,7 +13,53 @@ async function setup() {
 }
 const settle = () => new Promise(resolve => setImmediate(resolve));
 
-test('opening and refreshing never launch system commands', async () => {
+test('one-click start reuses a saved command and opens its terminal on the next click', async () => {
+  const { app, api, entry } = await setup();
+  try {
+    const input = { name: 'dev', command: "npm run 'dev'", directory: '.' };
+    assert.equal((await app.start(input)).entry.id, entry.id);
+    assert.equal((await app.start(input)).action, 'terminal');
+    assert.equal(api.stored.size, 1);
+    assert.equal(api.calls.filter(c => c[0] === 'open').length, 1);
+    assert.equal(api.calls.filter(c => c[0] === 'focus').length, 1);
+  } finally { app.dispose(); }
+});
+
+test('concurrent one-click starts persist and launch a new script once', async () => {
+  const { app, api } = await setup();
+  try {
+    const input = { name: 'API', command: 'npm run dev:api', directory: 'apps/api' };
+    await Promise.all([app.start(input), app.start(input), app.start(input)]);
+    assert.equal(api.stored.size, 2);
+    assert.equal(api.calls.filter(c => c[0] === 'open').length, 1);
+    assert.equal(api.calls.find(c => c[0] === 'open')[1].directory, 'apps/api');
+  } finally { app.dispose(); }
+});
+
+test('one-click failure remains blocked on retry without creating duplicate records', async () => {
+  const { app, api } = await setup();
+  try {
+    let opens = 0;
+    api.tabs.open = async () => { opens++; throw new Error('response lost'); };
+    const input = { name: 'API', command: 'npm run dev:api', directory: '.' };
+    await assert.rejects(app.start(input), /Check Muxy/);
+    await assert.rejects(app.start(input), /already has/);
+    assert.equal(opens, 1); assert.equal(api.stored.size, 2);
+    assert.equal(app.entries.find(entry => entry.name === 'API').run.state, 'unknown');
+  } finally { app.dispose(); }
+});
+
+test('one-click start rejects a changed worktree before persisting or opening', async () => {
+  const { app, api, entry } = await setup();
+  try {
+    const context = app.context; api.switchContext();
+    await assert.rejects(app.start(entry, context), /Workspace changed/);
+    assert.equal(api.stored.size, 1);
+    assert.equal(api.calls.filter(c => c[0] === 'open').length, 0);
+  } finally { app.dispose(); }
+});
+
+test('saved-command refresh never executes shell commands', async () => {
   const { app, api } = await setup();
   for (let i = 0; i < 5; i++) await app.refresh();
   assert.equal(api.calls.filter(c => c[0] === 'exec').length, 0);
@@ -23,10 +69,12 @@ test('launch persists intent before opening and recovers a linked terminal', asy
   const { app, api, entry } = await setup();
   await app.launch(entry.id); await settle();
   const open = api.calls.find(c => c[0] === 'open');
-  assert.deepEqual(open[1], { kind: 'terminal', directory: '.', command: 'npm run dev' });
+  assert.equal(open[1].kind, 'terminal');
+  assert.equal(open[1].directory, '.');
+  assert(open[1].command.includes('npm run dev'));
+  assert(open[1].command.endsWith('run-deck:' + app.entries[0].run.token));
   const loaded = new Launchpad(api); await loaded.refresh();
   assert.equal(loaded.entries[0].run.tabId, 'tab-1');
-  assert.equal(loaded.entries[0].run.paneId, 'pane-1');
   await assert.rejects(loaded.launch(entry.id), /already has/);
   app.dispose(); loaded.dispose();
 });
@@ -53,20 +101,12 @@ test('storage failure before launch prevents any command execution', async () =>
   assert.equal(api.calls.filter(c => c[0] === 'open').length, 0);
   app.dispose();
 });
-test('interrupt targets a verified pane and cancellation is a no-op', async () => {
-  const { app, api, entry } = await setup();
-  await app.launch(entry.id); await settle();
-  await app.interrupt(entry.id, async () => false);
-  assert.equal(api.calls.filter(c => c[0] === 'sendKeys').length, 0);
-  await app.interrupt(entry.id, async () => true);
-  assert.deepEqual(api.calls.find(c => c[0] === 'sendKeys'), ['sendKeys', 'pane-1', 'ctrl+c']);
-  app.dispose();
-});
-test('closed or detached terminal is not assumed stopped and cannot be interrupted', async () => {
+
+test('closed or detached terminal is not assumed stopped and cannot be relaunched', async () => {
   const { app, api, entry } = await setup();
   await app.launch(entry.id); await settle();
   api.setTabs([]);
-  await assert.rejects(app.interrupt(entry.id, async () => true), /terminal changed/);
+  await assert.rejects(app.terminal(entry.id), /no longer visible/);
   await assert.rejects(app.launch(entry.id), /already has/);
   assert.equal(api.calls.filter(c => c[0] === 'sendKeys').length, 0);
   app.dispose();
@@ -79,31 +119,9 @@ test('workspace switch while editing rejects saving into another worktree', asyn
   assert.equal([...api.stored.values()].filter(v => v.name === 'Wrong').length, 0);
   app.dispose();
 });
-test('workspace switch while confirmation is open prevents interrupt', async () => {
-  const { app, api, entry } = await setup();
-  await app.launch(entry.id); await settle();
-  await assert.rejects(app.interrupt(entry.id, async () => { api.switchContext(); return true; }), /Workspace changed/);
-  assert.equal(api.calls.filter(c => c[0] === 'sendKeys').length, 0);
-  app.dispose();
-});
-test('port query is bounded, manual, and cannot signal any process', async () => {
-  const { app, api } = await setup();
-  await app.scanPorts();
-  assert.equal(app.ports[0].port, 3000);
-  assert.deepEqual(api.calls.find(c => c[0] === 'exec')[1], ['/usr/sbin/lsof', '-nP', '-iTCP', '-sTCP:LISTEN', '-Fpcn']);
-  api.exec = async () => ({ exitCode: 1, stdout: '', stderr: 'permission denied', timedOut: false, truncated: false });
-  await assert.rejects(app.scanPorts(), /failed/);
-  app.dispose();
-});
-test('truncated and timed out scans do not turn into empty healthy results', async () => {
-  const { app, api } = await setup();
-  for (const flag of ['truncated', 'timedOut']) {
-    api.exec = async () => ({ exitCode: 0, stdout: '', stderr: '', [flag]: true });
-    await assert.rejects(app.scanPorts());
-    assert.equal(app.ports, null);
-  }
-  app.dispose();
-});
+
+
+
 test('discovery reads files without executing scripts', async () => {
   const { app, api } = await setup();
   const candidates = await app.discover();
@@ -126,5 +144,80 @@ test('disposing drops subscriptions and ignores subsequent host events', async (
   const { app, api } = await setup();
   app.dispose();
   api.emit('tab.created', { tabID: 'x', paneID: 'y', kind: 'terminal' });
-  assert.equal(app.events.size, 0);
+  assert.equal(app.unsubscribers.length, 0);
+});
+
+test('tab event bursts refresh linked terminal availability without rereading saved commands', async () => {
+  const { app, api, entry } = await setup();
+  await app.launch(entry.id); await settle();
+  let reads = 0; let lists = 0;
+  api.storage.get = async () => { reads++; throw new Error('Unexpected storage read'); };
+  const list = api.tabs.list; api.tabs.list = async () => { lists++; return list(); };
+  for (let i = 0; i < 100; i++) api.emit('tab.updated', { tabID: 'unrelated' });
+  await settle(); assert.equal(lists, 0);
+  api.setTabs([]);
+  for (let i = 0; i < 100; i++) api.emit('tab.closed', { tabID: app.entries[0].run.tabId });
+  await settle(); assert.equal(reads, 0); assert.equal(lists, 1); assert.deepEqual(app.tabs, []);
+  app.dispose();
+});
+test('hidden host events perform no reads; foreground catches up once', async () => {
+  const { app, api, entry } = await setup();
+  await app.launch(entry.id); await settle();
+  let reads = 0; const get = api.storage.get;
+  api.storage.get = async key => { reads++; return get(key); };
+  let lists = 0; const list = api.tabs.list;
+  api.tabs.list = async () => { lists++; return list(); };
+  app.setVisible(false);
+  for (let i = 0; i < 10; i++) api.emit('tab.closed', { tabID: app.entries[0].run.tabId });
+  api.switchContext('tree-2'); api.switchContext('tree-1');
+  await settle(); assert.equal(reads, 0); assert.equal(lists, 0);
+  app.setVisible(true); await settle();
+  assert.equal(reads, 1); assert.equal(lists, 1); assert.equal(app.entries[0].id, entry.id);
+  app.dispose();
+});
+test('title-only changes do not notify the renderer', async () => {
+  const { app, api, entry } = await setup();
+  await app.launch(entry.id); await settle();
+  let changes = 0; app.changed = () => { changes++; };
+  api.setTabs([{ id: app.entries[0].run.tabId, kind: 'terminal', title: 'New title' }]);
+  api.emit('tab.updated', { tabID: app.entries[0].run.tabId }); await settle();
+  assert.equal(changes, 0); app.dispose();
+});
+test('refresh callers wait for the new context when a workspace changes during a read', async () => {
+  const { app, api } = await setup();
+  let release; const keys = api.storage.keys;
+  api.storage.keys = () => new Promise(resolve => { release = () => resolve(keys()); });
+  const job = app.refresh(); await settle();
+  api.switchContext(); api.storage.keys = keys; release();
+  await job;
+  assert.equal(app.context.worktreeId, 'tree-2'); assert.deepEqual(app.entries, []);
+  app.dispose();
+});
+test('hiding before a queued event read starts defers it until foreground', async () => {
+  const { app, api, entry } = await setup();
+  await app.launch(entry.id); await settle();
+  let lists = 0; const list = api.tabs.list;
+  api.tabs.list = async () => { lists++; return list(); };
+  api.emit('tab.closed', { tabID: app.entries[0].run.tabId }); app.setVisible(false);
+  await settle(); assert.equal(lists, 0);
+  app.setVisible(true); await settle(); assert.equal(lists, 1); app.dispose();
+});
+test('automatic checks reuse commands but explicit refresh still observes storage changes', async () => {
+  const { app, api, entry } = await setup();
+  api.stored.set('v1/project-1/tree-1/' + entry.id, { ...entry, name: 'Renamed elsewhere' });
+  let reads = 0; const get = api.storage.get;
+  api.storage.get = async key => { reads++; return get(key); };
+  await app.refresh({ cached: true }); assert.equal(reads, 0); assert.equal(app.entries[0].name, 'Web');
+  await app.refresh(); assert.equal(reads, 1); assert.equal(app.entries[0].name, 'Renamed elsewhere');
+  app.dispose();
+});
+test('hiding during automatic key enumeration prevents the saved-command read fanout', async () => {
+  const { app, api } = await setup();
+  const keys = api.storage.keys; const get = api.storage.get; let release; let reads = 0;
+  api.storage.keys = () => new Promise(resolve => { release = () => resolve(keys()); });
+  api.storage.get = async key => { reads++; return get(key); };
+  api.emit('worktree.switched', {}); await settle();
+  app.setVisible(false); release(); await settle(); assert.equal(reads, 0);
+  api.storage.keys = keys; app.setVisible(true); await settle();
+  assert.equal(reads, 1); assert.equal(app.entries.length, 1); app.dispose();
 });

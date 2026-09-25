@@ -1,0 +1,707 @@
+[
+  {
+    "run": "full",
+    "completed": true,
+    "finished": {
+      "arm": "full",
+      "cadence_ms": 1200,
+      "cycles": 180,
+      "details": 0,
+      "documentHidden": false,
+      "elapsed_s": 246.137,
+      "elements": 4667,
+      "errors": 0,
+      "historyKeys": 0,
+      "latestServices": 0,
+      "members": 30,
+      "phase": "idle",
+      "rawBytes": 0,
+      "scans": 180,
+      "services": 200,
+      "timestamp": "2026-09-25T06:02:44Z",
+      "type": "finished"
+    },
+    "early_stop": null,
+    "diagnostic_marker": null,
+    "last_verified_cycles": 180,
+    "sampled_peak_footprint_MiB": 424.81549072265625,
+    "peak_sample": {
+      "timestamp": "2026-09-25T06:02:11.054164+00:00",
+      "elapsed_s": 213.93138512503356,
+      "arm": "full",
+      "processes": {
+        "host": {
+          "pid": 36573,
+          "process_start": 38154362648456,
+          "footprint_bytes": 20794240,
+          "rss_bytes": 71860224
+        },
+        "gpu": {
+          "pid": 36576,
+          "process_start": 38154371683109,
+          "footprint_bytes": 68290240,
+          "rss_bytes": 43827200
+        },
+        "networking": {
+          "pid": 36578,
+          "process_start": 38154375299405,
+          "footprint_bytes": 6194432,
+          "rss_bytes": 13402112
+        },
+        "webcontent": {
+          "pid": 36577,
+          "process_start": 38154374334407,
+          "footprint_bytes": 445451328,
+          "rss_bytes": 374177792
+        }
+      }
+    },
+    "sampled_peak_RSS_MiB": 359.234375,
+    "last_uninstrumented_footprint_MiB": 388.72174072265625,
+    "lowest_post_peak_uninstrumented_MiB": 388.72174072265625,
+    "visibility_failures": 0,
+    "errors": [],
+    "final10_idle_footprint_MiB": 388.72174072265625,
+    "final10_idle_RSS_MiB": 359.046875
+  },
+  {
+    "run": "fixture",
+    "completed": true,
+    "finished": {
+      "arm": "fixture",
+      "cadence_ms": 1200,
+      "cycles": 180,
+      "details": 0,
+      "documentHidden": false,
+      "elapsed_s": 349.58,
+      "elements": 4,
+      "errors": 0,
+      "historyKeys": 0,
+      "latestServices": 0,
+      "members": 30,
+      "phase": "idle",
+      "rawBytes": 827524,
+      "scans": 0,
+      "services": 200,
+      "timestamp": "2026-09-25T06:08:37Z",
+      "type": "finished"
+    },
+    "early_stop": null,
+    "diagnostic_marker": null,
+    "last_verified_cycles": 180,
+    "sampled_peak_footprint_MiB": 24.48590087890625,
+    "peak_sample": {
+      "timestamp": "2026-09-25T06:02:48.262548+00:00",
+      "elapsed_s": 1.0149222910404205,
+      "arm": "fixture",
+      "processes": {
+        "host": {
+          "pid": 39005,
+          "process_start": 38160365372958,
+          "footprint_bytes": 20548416,
+          "rss_bytes": 85688320
+        },
+        "gpu": {
+          "pid": 39007,
+          "process_start": 38160369666791,
+          "footprint_bytes": 16303552,
+          "rss_bytes": 27869184
+        },
+        "webcontent": {
+          "pid": 39008,
+          "process_start": 38160371439139,
+          "footprint_bytes": 25675328,
+          "rss_bytes": 37666816
+        },
+        "networking": {
+          "pid": 39009,
+          "process_start": 38160371605999,
+          "footprint_bytes": 5932352,
+          "rss_bytes": 19398656
+        }
+      }
+    },
+    "sampled_peak_RSS_MiB": 47.703125,
+    "last_uninstrumented_footprint_MiB": 18.9859619140625,
+    "lowest_post_peak_uninstrumented_MiB": 16.8297119140625,
+    "visibility_failures": 0,
+    "errors": [],
+    "final10_idle_footprint_MiB": 18.9859619140625,
+    "final10_idle_RSS_MiB": 34.0
+  },
+  {
+    "run": "data",
+    "completed": true,
+    "finished": {
+      "arm": "data",
+      "cadence_ms": 1200,
+      "cycles": 180,
+      "details": 0,
+      "documentHidden": false,
+      "elapsed_s": 364.344,
+      "elements": 4,
+      "errors": 0,
+      "historyKeys": 200,
+      "latestServices": 200,
+      "members": 30,
+      "phase": "idle",
+      "rawBytes": 827524,
+      "scans": 0,
+      "services": 200,
+      "timestamp": "2026-09-25T06:14:44Z",
+      "type": "finished"
+    },
+    "early_stop": null,
+    "diagnostic_marker": null,
+    "last_verified_cycles": 180,
+    "sampled_peak_footprint_MiB": 48.34539794921875,
+    "peak_sample": {
+      "timestamp": "2026-09-25T06:08:41.135607+00:00",
+      "elapsed_s": 1.0159047080669552,
+      "arm": "data",
+      "processes": {
+        "host": {
+          "pid": 39587,
+          "process_start": 38168834243165,
+          "footprint_bytes": 20433920,
+          "rss_bytes": 85852160
+        },
+        "webcontent": {
+          "pid": 39590,
+          "process_start": 38168839863976,
+          "footprint_bytes": 50693824,
+          "rss_bytes": 71942144
+        },
+        "networking": {
+          "pid": 39591,
+          "process_start": 38168839999983,
+          "footprint_bytes": 6047040,
+          "rss_bytes": 19349504
+        },
+        "gpu": {
+          "pid": 39589,
+          "process_start": 38168838668623,
+          "footprint_bytes": 16254272,
+          "rss_bytes": 27852800
+        }
+      }
+    },
+    "sampled_peak_RSS_MiB": 100.78125,
+    "last_uninstrumented_footprint_MiB": 22.79864501953125,
+    "lowest_post_peak_uninstrumented_MiB": 21.06427001953125,
+    "visibility_failures": 0,
+    "errors": [],
+    "final10_idle_footprint_MiB": 22.79864501953125,
+    "final10_idle_RSS_MiB": 89.09375
+  },
+  {
+    "run": "no-details",
+    "completed": true,
+    "finished": {
+      "arm": "no-details",
+      "cadence_ms": 1200,
+      "cycles": 180,
+      "details": 0,
+      "documentHidden": false,
+      "elapsed_s": 246.303,
+      "elements": 4667,
+      "errors": 0,
+      "historyKeys": 0,
+      "latestServices": 0,
+      "members": 30,
+      "phase": "idle",
+      "rawBytes": 0,
+      "scans": 180,
+      "services": 200,
+      "timestamp": "2026-09-25T06:18:53Z",
+      "type": "finished"
+    },
+    "early_stop": null,
+    "diagnostic_marker": null,
+    "last_verified_cycles": 180,
+    "sampled_peak_footprint_MiB": 105.68939208984375,
+    "peak_sample": {
+      "timestamp": "2026-09-25T06:14:49.077852+00:00",
+      "elapsed_s": 2.043927083024755,
+      "arm": "no-details",
+      "processes": {
+        "host": {
+          "pid": 40013,
+          "process_start": 38177638830276,
+          "footprint_bytes": 20482880,
+          "rss_bytes": 86474752
+        },
+        "gpu": {
+          "pid": 40015,
+          "process_start": 38177643103248,
+          "footprint_bytes": 32228928,
+          "rss_bytes": 37322752
+        },
+        "networking": {
+          "pid": 40017,
+          "process_start": 38177644572677,
+          "footprint_bytes": 5588224,
+          "rss_bytes": 19562496
+        },
+        "webcontent": {
+          "pid": 40016,
+          "process_start": 38177644394698,
+          "footprint_bytes": 110823360,
+          "rss_bytes": 110182400
+        }
+      }
+    },
+    "sampled_peak_RSS_MiB": 167.234375,
+    "last_uninstrumented_footprint_MiB": 52.51763916015625,
+    "lowest_post_peak_uninstrumented_MiB": 52.47076416015625,
+    "visibility_failures": 0,
+    "errors": [],
+    "final10_idle_footprint_MiB": 52.51763916015625,
+    "final10_idle_RSS_MiB": 166.859375
+  },
+  {
+    "run": "no-form",
+    "completed": true,
+    "finished": {
+      "arm": "full",
+      "cadence_ms": 1200,
+      "cycles": 180,
+      "details": 0,
+      "documentHidden": false,
+      "elapsed_s": 246.282,
+      "elements": 4667,
+      "errors": 0,
+      "historyKeys": 0,
+      "latestServices": 0,
+      "members": 30,
+      "phase": "idle",
+      "rawBytes": 0,
+      "scans": 180,
+      "services": 200,
+      "timestamp": "2026-09-25T06:28:00Z",
+      "type": "finished"
+    },
+    "early_stop": null,
+    "diagnostic_marker": null,
+    "last_verified_cycles": 180,
+    "sampled_peak_footprint_MiB": 347.6123046875,
+    "peak_sample": {
+      "timestamp": "2026-09-25T06:27:23.732090+00:00",
+      "elapsed_s": 209.6486512501724,
+      "arm": "full",
+      "processes": {
+        "host": {
+          "pid": 40767,
+          "process_start": 38190764580121,
+          "footprint_bytes": 20237248,
+          "rss_bytes": 75612160
+        },
+        "networking": {
+          "pid": 40771,
+          "process_start": 38190769506324,
+          "footprint_bytes": 6145280,
+          "rss_bytes": 15204352
+        },
+        "gpu": {
+          "pid": 40769,
+          "process_start": 38190768112822,
+          "footprint_bytes": 68601600,
+          "rss_bytes": 44974080
+        },
+        "webcontent": {
+          "pid": 40770,
+          "process_start": 38190769362711,
+          "footprint_bytes": 364497920,
+          "rss_bytes": 482230272
+        }
+      }
+    },
+    "sampled_peak_RSS_MiB": 466.96875,
+    "last_uninstrumented_footprint_MiB": 307.3466796875,
+    "lowest_post_peak_uninstrumented_MiB": 307.3466796875,
+    "visibility_failures": 0,
+    "errors": [],
+    "final10_idle_footprint_MiB": 307.3466796875,
+    "final10_idle_RSS_MiB": 463.734375
+  },
+  {
+    "run": "live-query",
+    "completed": false,
+    "finished": null,
+    "early_stop": {
+      "reason": "Live-query substitution did not eliminate sustained growth after at least 180 fully asserted UI cycles; stopped the planned 600-cycle run to prioritize the next isolated hypothesis.",
+      "last_completed_sample": {
+        "arm": "full",
+        "cadence_ms": 1200,
+        "cycles": 224,
+        "details": 0,
+        "documentHidden": false,
+        "elapsed_s": 270.332,
+        "elements": 4667,
+        "errors": 0,
+        "historyKeys": 0,
+        "latestServices": 0,
+        "members": 30,
+        "phase": "active",
+        "rawBytes": 0,
+        "scans": 225,
+        "services": 200,
+        "timestamp": "2026-09-25T06:23:29Z",
+        "type": "sample"
+      },
+      "host_pid": 40330
+    },
+    "diagnostic_marker": null,
+    "last_verified_cycles": 225,
+    "sampled_peak_footprint_MiB": 425.76885986328125,
+    "peak_sample": {
+      "timestamp": "2026-09-25T06:23:40.086644+00:00",
+      "elapsed_s": 282.2806668749545,
+      "arm": "full&cycles=600",
+      "processes": {
+        "host": {
+          "pid": 40330,
+          "process_start": 38183657336315,
+          "footprint_bytes": 19975040,
+          "rss_bytes": 76152832
+        },
+        "webcontent": {
+          "pid": 40338,
+          "process_start": 38183687850463,
+          "footprint_bytes": 446451008,
+          "rss_bytes": 602816512
+        },
+        "gpu": {
+          "pid": 40337,
+          "process_start": 38183686562380,
+          "footprint_bytes": 61900480,
+          "rss_bytes": 45023232
+        },
+        "networking": {
+          "pid": 40339,
+          "process_start": 38183687995366,
+          "footprint_bytes": 6112512,
+          "rss_bytes": 15564800
+        }
+      }
+    },
+    "sampled_peak_RSS_MiB": 575.03125,
+    "last_uninstrumented_footprint_MiB": 414.65948486328125,
+    "lowest_post_peak_uninstrumented_MiB": 414.65948486328125,
+    "visibility_failures": 0,
+    "errors": []
+  },
+  {
+    "run": "row-pool",
+    "completed": false,
+    "finished": null,
+    "early_stop": {
+      "reason": "A row-only pool did not eliminate sustained native growth; stopped after the fully asserted prefix to test a bounded whole-detail cache.",
+      "last_completed_sample": {
+        "arm": "full",
+        "cadence_ms": 1200,
+        "cycles": 254,
+        "details": 0,
+        "documentHidden": false,
+        "elapsed_s": 306.423,
+        "elements": 4667,
+        "errors": 0,
+        "historyKeys": 0,
+        "latestServices": 0,
+        "members": 30,
+        "phase": "active",
+        "rawBytes": 0,
+        "scans": 255,
+        "services": 200,
+        "timestamp": "2026-09-25T06:33:11Z",
+        "type": "sample"
+      },
+      "host_pid": 41015
+    },
+    "diagnostic_marker": null,
+    "last_verified_cycles": 255,
+    "sampled_peak_footprint_MiB": 465.81585693359375,
+    "peak_sample": {
+      "timestamp": "2026-09-25T06:32:47.417426+00:00",
+      "elapsed_s": 283.25126808392815,
+      "arm": "full&cycles=600",
+      "processes": {
+        "host": {
+          "pid": 41015,
+          "process_start": 38196766435773,
+          "footprint_bytes": 19860288,
+          "rss_bytes": 76644352
+        },
+        "gpu": {
+          "pid": 41017,
+          "process_start": 38196769621936,
+          "footprint_bytes": 70600448,
+          "rss_bytes": 45006848
+        },
+        "networking": {
+          "pid": 41019,
+          "process_start": 38196770887086,
+          "footprint_bytes": 6178112,
+          "rss_bytes": 15532032
+        },
+        "webcontent": {
+          "pid": 41018,
+          "process_start": 38196770692452,
+          "footprint_bytes": 488443328,
+          "rss_bytes": 569475072
+        }
+      }
+    },
+    "sampled_peak_RSS_MiB": 582.046875,
+    "last_uninstrumented_footprint_MiB": 436.44097900390625,
+    "lowest_post_peak_uninstrumented_MiB": 404.26898193359375,
+    "visibility_failures": 0,
+    "errors": []
+  },
+  {
+    "run": "detail-cache",
+    "completed": false,
+    "finished": null,
+    "early_stop": {
+      "reason": "Reusing detached detail views did not eliminate sustained growth. Testing native collapsed details with the same bounded cache next.",
+      "last_completed_sample": {
+        "arm": "full",
+        "cadence_ms": 1200,
+        "cycles": 224,
+        "details": 0,
+        "documentHidden": false,
+        "elapsed_s": 270.367,
+        "elements": 4667,
+        "errors": 0,
+        "historyKeys": 0,
+        "latestServices": 0,
+        "members": 30,
+        "phase": "active",
+        "rawBytes": 0,
+        "scans": 225,
+        "services": 200,
+        "timestamp": "2026-09-25T06:38:03Z",
+        "type": "sample"
+      },
+      "host_pid": 41387
+    },
+    "diagnostic_marker": null,
+    "last_verified_cycles": 225,
+    "sampled_peak_footprint_MiB": 379.65936279296875,
+    "peak_sample": {
+      "timestamp": "2026-09-25T06:38:10.541671+00:00",
+      "elapsed_s": 278.31529783294536,
+      "arm": "full&cycles=600",
+      "processes": {
+        "host": {
+          "pid": 41387,
+          "process_start": 38204639750761,
+          "footprint_bytes": 20122624,
+          "rss_bytes": 75153408
+        },
+        "networking": {
+          "pid": 41391,
+          "process_start": 38204645320592,
+          "footprint_bytes": 6194496,
+          "rss_bytes": 13484032
+        },
+        "gpu": {
+          "pid": 41389,
+          "process_start": 38204643778606,
+          "footprint_bytes": 66094848,
+          "rss_bytes": 44482560
+        },
+        "webcontent": {
+          "pid": 41390,
+          "process_start": 38204645150018,
+          "footprint_bytes": 398101696,
+          "rss_bytes": 573243392
+        }
+      }
+    },
+    "sampled_peak_RSS_MiB": 546.6875,
+    "last_uninstrumented_footprint_MiB": 358.33123779296875,
+    "lowest_post_peak_uninstrumented_MiB": 358.33123779296875,
+    "visibility_failures": 0,
+    "errors": []
+  },
+  {
+    "run": "attached-cache",
+    "completed": false,
+    "finished": null,
+    "early_stop": {
+      "reason": "Keeping a bounded set of details attached did not eliminate sustained growth. No cache prototype is adopted.",
+      "last_completed_sample": {
+        "arm": "full",
+        "cadence_ms": 1200,
+        "cycles": 194,
+        "details": 8,
+        "documentHidden": false,
+        "elapsed_s": 234.326,
+        "elements": 6115,
+        "errors": 0,
+        "historyKeys": 0,
+        "latestServices": 0,
+        "members": 30,
+        "phase": "active",
+        "rawBytes": 0,
+        "scans": 195,
+        "services": 200,
+        "timestamp": "2026-09-25T06:42:18Z",
+        "type": "sample"
+      },
+      "host_pid": 41724
+    },
+    "diagnostic_marker": null,
+    "last_verified_cycles": 195,
+    "sampled_peak_footprint_MiB": 384.0655517578125,
+    "peak_sample": {
+      "timestamp": "2026-09-25T06:42:23.006191+00:00",
+      "elapsed_s": 238.89928858284838,
+      "arm": "full&cycles=600",
+      "processes": {
+        "host": {
+          "pid": 41724,
+          "process_start": 38211641588897,
+          "footprint_bytes": 19778432,
+          "rss_bytes": 82968576
+        },
+        "gpu": {
+          "pid": 41726,
+          "process_start": 38211645864337,
+          "footprint_bytes": 59524800,
+          "rss_bytes": 47104000
+        },
+        "networking": {
+          "pid": 41728,
+          "process_start": 38211647314804,
+          "footprint_bytes": 5702912,
+          "rss_bytes": 17448960
+        },
+        "webcontent": {
+          "pid": 41727,
+          "process_start": 38211647182686,
+          "footprint_bytes": 402721920,
+          "rss_bytes": 617578496
+        }
+      }
+    },
+    "sampled_peak_RSS_MiB": 588.96875,
+    "last_uninstrumented_footprint_MiB": 384.0655517578125,
+    "lowest_post_peak_uninstrumented_MiB": 384.0655517578125,
+    "visibility_failures": 0,
+    "errors": []
+  },
+  {
+    "run": "minimal-static",
+    "completed": true,
+    "finished": {
+      "cycles": 600,
+      "documentHidden": false,
+      "elapsed_s": 80.598,
+      "elements": 21,
+      "phase": "idle",
+      "timestamp": "2026-09-25T06:43:55Z",
+      "type": "finished"
+    },
+    "early_stop": null,
+    "diagnostic_marker": null,
+    "last_verified_cycles": 600,
+    "sampled_peak_footprint_MiB": 728.3002319335938,
+    "peak_sample": {
+      "timestamp": "2026-09-25T06:43:35.418341+00:00",
+      "elapsed_s": 60.50121233286336,
+      "arm": "fixture",
+      "processes": {
+        "host": {
+          "pid": 41983,
+          "process_start": 38217660983162,
+          "footprint_bytes": 20056896,
+          "rss_bytes": 85606400
+        },
+        "gpu": {
+          "pid": 41985,
+          "process_start": 38217665156559,
+          "footprint_bytes": 28263936,
+          "rss_bytes": 32538624
+        },
+        "webcontent": {
+          "pid": 41986,
+          "process_start": 38217666482441,
+          "footprint_bytes": 763678144,
+          "rss_bytes": 931610624
+        },
+        "networking": {
+          "pid": 41987,
+          "process_start": 38217666625122,
+          "footprint_bytes": 4932864,
+          "rss_bytes": 18661376
+        }
+      }
+    },
+    "sampled_peak_RSS_MiB": 896.21875,
+    "last_uninstrumented_footprint_MiB": 677.25341796875,
+    "lowest_post_peak_uninstrumented_MiB": 677.25341796875,
+    "visibility_failures": 0,
+    "errors": [],
+    "final10_idle_footprint_MiB": 705.7221374511719,
+    "final10_idle_RSS_MiB": 896.1328125
+  },
+  {
+    "run": "minimal-live",
+    "completed": true,
+    "finished": {
+      "cycles": 1200,
+      "documentHidden": false,
+      "elapsed_s": 142.427,
+      "elements": 21,
+      "phase": "idle",
+      "timestamp": "2026-09-25T06:47:13Z",
+      "type": "finished"
+    },
+    "early_stop": null,
+    "diagnostic_marker": {
+      "timestamp": "2026-09-25T06:46:53.810882+00:00",
+      "pid": 42226,
+      "scope": "Diagnostic during idle, after active workload; exclude later samples from uninstrumented comparisons."
+    },
+    "last_verified_cycles": 1200,
+    "sampled_peak_footprint_MiB": 1389.2860717773438,
+    "peak_sample": {
+      "timestamp": "2026-09-25T06:46:51.600168+00:00",
+      "elapsed_s": 120.86378587502986,
+      "arm": "fixture",
+      "processes": {
+        "host": {
+          "pid": 42223,
+          "process_start": 38220920518318,
+          "footprint_bytes": 20532096,
+          "rss_bytes": 74498048
+        },
+        "networking": {
+          "pid": 42227,
+          "process_start": 38220926281276,
+          "footprint_bytes": 5768448,
+          "rss_bytes": 12304384
+        },
+        "webcontent": {
+          "pid": 42226,
+          "process_start": 38220926109191,
+          "footprint_bytes": 1456772032,
+          "rss_bytes": 1578860544
+        },
+        "gpu": {
+          "pid": 42225,
+          "process_start": 38220924852034,
+          "footprint_bytes": 27952704,
+          "rss_bytes": 26492928
+        }
+      }
+    },
+    "sampled_peak_RSS_MiB": 1513.015625,
+    "last_uninstrumented_footprint_MiB": 89.5517578125,
+    "lowest_post_peak_uninstrumented_MiB": 89.5517578125,
+    "visibility_failures": 0,
+    "errors": []
+  }
+]

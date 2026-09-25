@@ -1,0 +1,19 @@
+--- a/src/observation.js
++++ b/src/observation.js
+@@ -71,10 +71,13 @@
+   }
+   observe(service, host, now) {
+     const key = this.key(service, host);
++    // Parser strings may be slices/ropes backed by a full host scan. Keep a
++    // serialized identity in long-lived history so it owns only this value.
++    const identity = JSON.stringify(service.listeningIds);
+     let record = this.records.get(key);
+-    if (!record || now - record.at > 15000 || now < record.at) record = { samples: [], replacements: [], identity: service.listeningIds, at: now };
+-    if (service.listeningIds !== record.identity) {
+-      record.replacements.push(now); record.identity = service.listeningIds; record.samples = [];
++    if (!record || now - record.at > 15000 || now < record.at) record = { samples: [], replacements: [], identity, at: now };
++    if (identity !== record.identity) {
++      record.replacements.push(now); record.identity = identity; record.samples = [];
+     }
+     // Only the last three replacements are needed to answer the threshold.
+     record.replacements = record.replacements.filter(t => now - t <= 120000).slice(-3);

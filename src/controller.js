@@ -1,4 +1,10 @@
-import { MAX_COMMANDS, validateEntry, decodeRecord, scopeKey, contextFrom, sameContext, terminalState, parseListeners, detectScripts } from './model.js';
+import { launchCommand } from './processes.js';
+import { MAX_COMMANDS, validateEntry, decodeRecord, scopeKey, contextFrom, sameContext, terminalState, detectScripts, matchingCommand } from './model.js';
+
+function sameAssociation(a, b) {
+  if (!a || !b) return a === b;
+  return ['state', 'token', 'tabId', 'paneId', 'requestedAt'].every(key => a[key] === b[key]);
+}
 
 export class Launchpad {
   constructor(api, changed = () => {}) {
@@ -7,49 +13,69 @@ export class Launchpad {
     this.context = null;
     this.entries = [];
     this.tabs = [];
-    this.ports = null;
-    this.portsAt = null;
     this.busy = new Set();
-    this.events = new Map();
     this.unsubscribers = [];
     this.disposed = false;
     this.epoch = 0;
+    this.contextVersion = 0;
     this.refreshJob = null;
-    this.refreshAgain = false;
+    this.pendingRead = 0; // 1: terminal availability, 2: saved commands and context
+    this.readingFull = false;
+    this.visible = true;
     this.error = '';
-    this.storageError = '';
   }
 
-  async currentContext() {
+  async currentContext(check = () => {}) {
+    check();
     const projects = await this.api.projects.list();
+    check();
     const active = projects.find(p => p.isActive);
     if (!active) throw new Error('Open a project in Muxy first.');
     const worktrees = await this.api.worktrees.list(active.id);
+    check();
     return contextFrom(projects, worktrees);
   }
 
-  async assertContext(expected = this.context) {
-    if (this.disposed || !sameContext(expected, await this.currentContext())) {
+  async assertContext(expected = this.context, { signal } = {}) {
+    const version = this.contextVersion;
+    const check = () => {
+      signal?.throwIfAborted();
+      if (this.disposed || version !== this.contextVersion) throw new Error('Workspace changed. Refresh Run Deck and try again.');
+    };
+    const current = await this.currentContext(check);
+    check();
+    if (!sameContext(expected, current)) {
       throw new Error('Workspace changed. Refresh Run Deck and try again.');
     }
   }
 
   subscribe() {
-    for (const name of ['tab.created', 'tab.updated', 'pane.created', 'tab.closed', 'pane.closed', 'project.switched', 'worktree.switched']) {
-      this.unsubscribers.push(this.api.events.subscribe(name, event => {
+    for (const name of ['tab.created', 'tab.updated', 'tab.closed']) {
+      this.unsubscribers.push(this.api.events.subscribe(name, (event = {}) => {
         if (this.disposed) return;
-        if (event.tabID && event.paneID && event.kind === 'terminal') {
-          this.events.set(event.tabID, { ...event });
-          if (this.events.size > 256) this.events.delete(this.events.keys().next().value);
-        }
-        if (name === 'project.switched' || name === 'worktree.switched') {
-          this.epoch++;
-          this.ports = null;
-          this.portsAt = null;
-        }
-        this.refresh().catch(error => this.report(error));
+        if (event.projectID && this.context && event.projectID !== this.context.projectId) return;
+        if (event.worktreeID && this.context && event.worktreeID !== this.context.worktreeId) return;
+        if (!this.entries.some(entry => entry.run?.tabId && (!event.tabID || entry.run.tabId === event.tabID))) return;
+        this.pendingRead = Math.max(this.pendingRead, 1);
+        if (this.visible) this.refresh({ tabsOnly: true }).catch(error => this.report(error));
       }));
     }
+    for (const name of ['project.switched', 'worktree.switched']) {
+      this.unsubscribers.push(this.api.events.subscribe(name, () => {
+        if (this.disposed) return;
+        this.epoch++;
+        this.contextVersion++;
+        this.pendingRead = 2;
+        this.context = null; this.entries = []; this.tabs = [];
+        this.changed({ contextChanged: true });
+        if (this.visible) this.refresh({ cached: true }).catch(error => this.report(error));
+      }));
+    }
+  }
+
+  setVisible(visible) {
+    this.visible = visible;
+    if (visible && this.pendingRead) this.refresh({ tabsOnly: true }).catch(error => this.report(error));
   }
 
   report(error) {
@@ -58,36 +84,60 @@ export class Launchpad {
     this.changed();
   }
 
-  refresh() {
+  refresh({ tabsOnly = false, cached = false } = {}) {
     if (this.disposed) return Promise.resolve();
-    if (this.refreshJob) { this.refreshAgain = true; return this.refreshJob; }
-    this.refreshJob = this.readState().finally(() => {
-      this.refreshJob = null;
-      if (this.refreshAgain && !this.disposed) {
-        this.refreshAgain = false;
-        this.refresh().catch(error => this.report(error));
-      }
-    });
+    if (cached && !this.pendingRead && this.context) return this.refreshJob || Promise.resolve();
+    if (this.refreshJob && (tabsOnly || this.readingFull)) return this.refreshJob;
+    this.pendingRead = Math.max(this.pendingRead, tabsOnly ? 1 : 2);
+    if (this.refreshJob) return this.refreshJob;
+    // Batch synchronous event bursts, and keep callers waiting through a
+    // context change instead of returning an obsolete in-flight read.
+    this.refreshJob = Promise.resolve().then(async () => {
+      if (this.disposed || (!this.visible && (tabsOnly || cached))) return;
+      do {
+        const full = this.pendingRead === 2;
+        this.readingFull = full;
+        this.pendingRead = 0;
+        if (full) await this.readState(tabsOnly || cached); else await this.readTabs();
+      } while (!this.disposed && this.visible && this.pendingRead);
+    }).finally(() => { this.refreshJob = null; this.readingFull = false; });
     return this.refreshJob;
   }
 
-  async readState() {
+  async readTabs() {
+    const epoch = this.epoch;
+    const tabs = await this.api.tabs.list();
+    if (this.disposed) return;
+    if (epoch !== this.epoch) { this.pendingRead = 2; return; }
+    const previous = new Map(this.tabs.map(tab => [tab.id, tab.kind]));
+    if (tabs.length === previous.size && tabs.every(tab => previous.get(tab.id) === tab.kind)) return;
+    this.tabs = tabs;
+    this.changed();
+  }
+
+  async readState(foregroundOnly = false) {
     const epoch = this.epoch;
     const context = await this.currentContext();
+    if (this.disposed) return;
+    if (foregroundOnly && !this.visible) { this.pendingRead = 2; return; }
+    if (epoch !== this.epoch) { this.pendingRead = 2; return; }
     const prefix = scopeKey(context);
     const keys = (await this.api.storage.keys()).filter(key => key.startsWith(prefix));
+    if (this.disposed) return;
+    if (epoch !== this.epoch || foregroundOnly && !this.visible) { this.pendingRead = 2; return; }
     if (keys.length > MAX_COMMANDS) throw new Error(`This worktree exceeds the ${MAX_COMMANDS} command limit.`);
     const [records, tabs] = await Promise.all([
       Promise.all(keys.map(async key => decodeRecord(await this.api.storage.get(key), key.slice(prefix.length)))),
       this.api.tabs.list(),
     ]);
-    if (this.disposed || epoch !== this.epoch) { this.refreshAgain = true; return; }
-    if (!sameContext(context, await this.currentContext())) { this.refreshAgain = true; return; }
-    if (!sameContext(this.context, context)) { this.ports = null; this.portsAt = null; }
+    if (this.disposed) return;
+    if (foregroundOnly && !this.visible) { this.pendingRead = 2; return; }
+    if (epoch !== this.epoch) { this.pendingRead = 2; return; }
+    if (!sameContext(context, await this.currentContext())) { this.pendingRead = 2; return; }
+    if (this.disposed || epoch !== this.epoch) { if (!this.disposed) this.pendingRead = 2; return; }
     this.context = context;
     this.tabs = tabs;
     this.entries = records.sort((a, b) => a.createdAt - b.createdAt);
-    this.storageError = '';
     this.error = '';
     this.changed();
   }
@@ -105,6 +155,8 @@ export class Launchpad {
   async persist(context, entry) {
     this.epoch++;
     await this.api.storage.set(scopeKey(context) + entry.id, entry);
+    // Reads started while the host write was pending may still hold old data.
+    this.epoch++;
     if (!this.disposed && sameContext(this.context, context)) {
       const index = this.entries.findIndex(item => item.id === entry.id);
       if (index < 0) this.entries.push(entry);
@@ -116,7 +168,6 @@ export class Launchpad {
   async save(input, id = null, expected = this.context) {
     return this.exclusive(id || 'new', async () => {
       await this.assertContext(expected);
-      if (this.storageError) throw new Error(this.storageError);
       const fields = validateEntry(input);
       const key = id || crypto.randomUUID();
       const stored = id ? await this.api.storage.get(scopeKey(expected) + id) : null;
@@ -134,55 +185,104 @@ export class Launchpad {
     });
   }
 
-  async launch(id) {
+  async start(input, expected = this.context) {
+    return this.exclusive('starter', async () => {
+      const fields = validateEntry(input);
+      await this.refresh();
+      await this.assertContext(expected);
+      let entry = matchingCommand(this.entries, fields);
+      if (entry && terminalState(entry, this.tabs) === 'open') {
+        await this.terminal(entry.id, expected);
+        return { entry, action: 'terminal' };
+      }
+      if (!entry) entry = await this.save(fields, null, expected);
+      // launch() preserves uncertain associations and rechecks persisted state.
+      await this.assertContext(expected);
+      const launched = await this.launch(entry.id, expected);
+      return launched && { entry: launched, action: 'launch' };
+    });
+  }
+
+  async launch(id, expected = this.context) {
+    return this.exclusive(id, async () => {
+      const context = expected;
+      await this.assertContext(context);
+      const entry = decodeRecord(await this.api.storage.get(scopeKey(context) + id), id);
+      if (entry.run) throw new Error('This command already has a terminal association. Review or forget it first.');
+      return this.openEntry(context, entry);
+    });
+  }
+
+  async openEntry(context, entry, guard = null) {
+    const staged = { ...entry, run: { state: 'opening', token: crypto.randomUUID(), tabId: null, requestedAt: Date.now() } };
+    await this.persist(context, staged);
+    let opened = false;
+    try {
+      await this.assertContext(context);
+      const tabId = await this.api.tabs.open({ kind: 'terminal', directory: entry.directory, command: launchCommand(entry.command, staged.run.token, guard) });
+      if (typeof tabId !== 'string' || !tabId) throw new Error('Muxy did not return a terminal ID. Review the terminal before retrying.');
+      opened = true;
+      const stored = await this.api.storage.get(scopeKey(context) + entry.id);
+      if (!stored || !sameAssociation(stored.run, staged.run)) {
+        throw new Error('Launch association changed while opening the terminal. Refresh before continuing.');
+      }
+      const current = decodeRecord(stored, entry.id);
+      const linked = { ...current, run: { ...current.run, state: 'linked', tabId } };
+      await this.persist(context, linked);
+      // Read failures cannot undo a launch and association already confirmed.
+      await this.refresh().catch(error => this.report(error));
+      return linked;
+    } catch (error) {
+      try {
+        const stored = await this.api.storage.get(scopeKey(context) + entry.id);
+        // A late failure must not undo a linked, forgotten, or replaced run.
+        if (stored && sameAssociation(stored.run, staged.run)) {
+          const current = decodeRecord(stored, entry.id);
+          await this.persist(context, { ...current, run: { ...current.run, state: 'unknown' } });
+        }
+      } catch {}
+      throw new Error(`${error.message} ${opened ? 'A terminal was opened. ' : ''}Check Muxy before starting another instance.`);
+    }
+  }
+
+  async restart(id, token, stop) {
     return this.exclusive(id, async () => {
       const context = this.context;
       await this.assertContext(context);
       const entry = decodeRecord(await this.api.storage.get(scopeKey(context) + id), id);
-      if (entry.run) throw new Error('This command already has a terminal association. Review or forget it first.');
-      const staged = { ...entry, run: { state: 'opening', tabId: null, paneId: null, requestedAt: Date.now() } };
-      await this.persist(context, staged);
-      let opened = false;
+      if (entry.run?.state !== 'linked' || entry.run.token !== token) throw new Error('Launch association changed. Refresh before restarting.');
+      await this.persist(context, { ...entry, run: { ...entry.run, state: 'restarting' } });
+      let guard, current;
       try {
-        await this.assertContext(context);
-        const tabId = await this.api.tabs.open({ kind: 'terminal', directory: entry.directory, command: entry.command });
-        if (typeof tabId !== 'string' || !tabId) throw new Error('Muxy did not return a terminal ID. Review the terminal before retrying.');
-        opened = true;
-        const event = this.events.get(tabId);
-        const paneId = event?.projectID === context.projectId && event?.worktreeID === context.worktreeId ? event.paneID : null;
-        const linked = { ...staged, run: { ...staged.run, state: 'linked', tabId, paneId } };
-        await this.persist(context, linked);
-        await this.refresh();
+        guard = await stop(); await this.assertContext(context);
+        current = decodeRecord(await this.api.storage.get(scopeKey(context) + id), id);
+        if (current.run?.state !== 'restarting' || current.run.token !== token || current.command !== entry.command || current.directory !== entry.directory) {
+          throw new Error('Launch association changed during restart. No replacement was started.');
+        }
       } catch (error) {
-        try { await this.persist(context, { ...staged, run: { ...staged.run, state: 'unknown' } }); } catch {}
-        throw new Error(`${error.message} ${opened ? 'A terminal was opened. ' : ''}Check Muxy before starting another instance.`);
+        const current = await this.api.storage.get(scopeKey(context) + id);
+        if (current?.run?.state === 'restarting' && current.run.token === token) {
+          // Undo only our transition; preserve fields edited while stopping.
+          await this.persist(context, { ...current, run: { ...current.run, state: entry.run.state } });
+        }
+        throw error;
       }
+      return this.openEntry(context, current, guard);
     });
   }
 
-  async terminal(id) {
+  async terminal(id, expected = this.context, token = null) {
     const entry = this.entries.find(item => item.id === id);
-    await this.assertContext();
+    if (token !== null && entry?.run?.token !== token) throw new Error('Launch association changed. Refresh before opening its terminal.');
+    await this.assertContext(expected);
     const tabs = await this.api.tabs.list();
     if (!entry || terminalState(entry, tabs) !== 'open') throw new Error('The linked terminal is no longer visible. Check Muxy background sessions.');
+    const stored = await this.api.storage.get(scopeKey(expected) + id);
+    if (!stored || !sameAssociation(decodeRecord(stored, id).run, entry.run)) {
+      throw new Error('Launch association changed. Refresh before opening its terminal.');
+    }
+    await this.assertContext(expected);
     await this.api.tabs.switchTo(entry.run.tabId);
-  }
-
-  async interrupt(id, confirm) {
-    return this.exclusive(id, async () => {
-      const context = this.context;
-      await this.assertContext(context);
-      const entry = this.entries.find(item => item.id === id);
-      if (!entry?.run?.tabId) throw new Error('No verified terminal association.');
-      const event = this.events.get(entry.run.tabId);
-      const paneId = event?.projectID === context.projectId && event?.worktreeID === context.worktreeId ? event.paneID : entry.run.paneId;
-      if (!paneId) throw new Error('The pane ID is unavailable. Open the terminal and press Ctrl+C there.');
-      if (!await confirm(entry)) return;
-      await this.assertContext(context);
-      const [tabs, panes] = await Promise.all([this.api.tabs.list(), this.api.panes.list()]);
-      if (terminalState(entry, tabs) !== 'open' || !panes.some(p => p.id === paneId)) throw new Error('The terminal changed. Nothing was interrupted.');
-      await this.api.panes.sendKeys(paneId, 'ctrl+c');
-    });
   }
 
   async forget(id, confirm) {
@@ -191,7 +291,12 @@ export class Launchpad {
       const entry = this.entries.find(item => item.id === id);
       if (!entry || !await confirm(entry)) return;
       await this.assertContext(context);
-      await this.persist(context, { ...entry, run: null });
+      const stored = await this.api.storage.get(scopeKey(context) + id);
+      if (!stored) throw new Error('This command was removed. Refresh first.');
+      const current = decodeRecord(stored, id);
+      if (!sameAssociation(current.run, entry.run)) throw new Error('Launch association changed. Review it before forgetting.');
+      await this.assertContext(context);
+      await this.persist(context, { ...current, run: null });
     });
   }
 
@@ -203,38 +308,30 @@ export class Launchpad {
       await this.assertContext(context);
       this.epoch++;
       await this.api.storage.delete(scopeKey(context) + id);
+      this.epoch++;
       this.entries = this.entries.filter(item => item.id !== id);
       this.changed();
     });
   }
 
-  async scanPorts() {
-    return this.exclusive('ports', async () => {
-      const context = this.context;
-      await this.assertContext(context);
-      const result = await this.api.exec(['/usr/sbin/lsof', '-nP', '-iTCP', '-sTCP:LISTEN', '-Fpcn'], { timeoutMs: 5000, cwd: context.path });
-      await this.assertContext(context);
-      if (result.timedOut || result.truncated || (result.exitCode !== 0 && !(result.exitCode === 1 && !result.stdout.trim() && !result.stderr.trim()))) {
-        throw new Error(result.timedOut ? 'Port inspection timed out. Retry when needed.' : 'Port inspection failed or was incomplete. Check lsof availability and permissions.');
-      }
-      this.ports = parseListeners(result.stdout);
-      this.portsAt = new Date();
-      this.changed();
-    });
-  }
-
-  async discover() {
-    return this.exclusive('discover', async () => {
-      const context = this.context;
-      await this.assertContext(context);
-      const entries = await this.api.files.list('', { project: context.projectId });
-      if (!entries.some(file => file.name === 'package.json')) throw new Error('No package.json in this worktree. Add a command manually.');
-      const metadata = await this.api.files.stat('package.json', { project: context.projectId });
-      if (metadata.size > 256 * 1024) throw new Error('package.json exceeds the 256 KiB inspection limit.');
-      const file = await this.api.files.read('package.json', { project: context.projectId });
-      await this.assertContext(context);
-      return detectScripts(file.content, entries.map(file => file.name));
-    });
+  async discover({ signal } = {}) {
+    const context = this.context;
+    const version = this.contextVersion;
+    const check = () => {
+      signal?.throwIfAborted();
+      if (this.disposed || version !== this.contextVersion || !sameContext(context, this.context)) throw new Error('Workspace changed. Refresh Run Deck and try again.');
+    };
+    // Discovery is read-only and belongs to its dialog, not the mutation lock.
+    // The host cannot cancel dispatched reads; stop before issuing the next one.
+    check();
+    await this.assertContext(context, { signal }); check();
+    const entries = await this.api.files.list('', { project: context.projectId }); check();
+    if (!entries.some(file => file.name === 'package.json')) return [];
+    const metadata = await this.api.files.stat('package.json', { project: context.projectId }); check();
+    if (metadata.size > 256 * 1024) throw new Error('package.json exceeds the 256 KiB inspection limit.');
+    const file = await this.api.files.read('package.json', { project: context.projectId }); check();
+    await this.assertContext(context, { signal }); check();
+    return detectScripts(file.content, entries.map(file => file.name));
   }
 
   dispose() {
@@ -242,6 +339,5 @@ export class Launchpad {
     this.epoch++;
     for (const unsubscribe of this.unsubscribers) unsubscribe();
     this.unsubscribers = [];
-    this.events.clear();
   }
 }
