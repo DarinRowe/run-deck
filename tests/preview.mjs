@@ -70,3 +70,8 @@ if (new URLSearchParams(location.search).get('build') === '1') {
   }
   await import(/* @vite-ignore */ new URL(html.querySelector('script[type=module][src*="/assets/"]').getAttribute('src'), entry).href);
 } else await import('../src/main.js');
+
+if (new URLSearchParams(location.search).has('postLaunchCheck')) await import('./post-launch-refresh.mjs');
+
+if (new URLSearchParams(location.search).has("cardStability")) await import("./card-stability.mjs");
+if (new URLSearchParams(location.search).has('localeLayout')) await import('./locale-layout.mjs');

@@ -1,4 +1,14 @@
+import fr from './locales/fr.js';
+import de from './locales/de.js';
+import es from './locales/es.js';
+import pt from './locales/pt.js';
+import ko from './locales/ko.js';
+
+export const languages = { en: 'English', zh: '简体中文', fr: 'Français', de: 'Deutsch', es: 'Español', pt: 'Português (Brasil)', ko: '한국어' };
+export const languageTags = { en: 'en', zh: 'zh-CN', fr: 'fr', de: 'de', es: 'es', pt: 'pt-BR', ko: 'ko' };
+
 export const dictionaries = {
+  fr, de, es, pt, ko,
   en: {
     title: 'Run Deck', startCommand: 'Start command',
     running: 'Running services', system: 'App & system processes', refresh: 'Refresh', refreshing: 'Checking…',
@@ -36,16 +46,17 @@ export const dictionaries = {
     replaced: 'The original service stopped, but another process is listening on that port. It may have restarted.',
     cancel: 'Cancel', close: 'Close', dismiss: 'Dismiss', protected: 'Managed by an app or macOS',
     otherUser: 'Owned by another user', unverified: 'Process identity unavailable',
-    limited: 'Showing the first 200 listening processes.', language: '中文',
-    newTitle: 'Start a command', command: 'Command', commandHint: 'Opens in a terminal and is saved for next time.', shellHint: 'Commands run through /bin/sh. Use an explicit shell for shell-specific syntax.', commandActions: 'Actions for {name}',
+    limited: 'Showing the first 200 listening processes.', language: 'Language',
+    newTitle: 'Start a command', command: 'Command', shellHint: 'Commands run through /bin/sh. Use an explicit shell for shell-specific syntax.', commandActions: 'Actions for {name}',
+    workingDirectory: 'Working directory', scriptDetails: '{command} — script details for {name}',
     chooseScript: 'Project scripts', advanced: 'More options', name: 'Name', optional: 'Optional',
     projectCommands: 'Project commands', otherScripts: 'Other scripts · {count}', customCommand: 'Custom command',
-    projectRoot: 'Project root', runTask: 'Run', launchCustom: 'Save & start', working: 'Opening…', reviewTerminal: 'Review terminal',
+    runTask: 'Run', launchCustom: 'Save & start', working: 'Opening…', reviewTerminal: 'Review terminal',
     scriptsFailed: 'Couldn’t read project scripts. You can still enter a custom command.', retryScripts: 'Retry discovery',
     starterWorkspaceChanged: 'The worktree changed. Close and reopen this dialog to use its commands.',
     directoryHint: 'Relative to the current worktree. Leave “.” for the project root.',
     launch: 'Start', launching: 'Starting…', launched: 'Command started in Muxy. Checking for services…',
-    savedCommands: 'Saved commands', terminal: 'View terminal', saved: 'Saved', linked: 'Terminal linked',
+    savedCommands: 'Saved commands', terminal: 'View terminal',
     forget: 'Forget terminal', forgetTitle: 'Forget this terminal?',
     forgetText: 'This only clears the saved link. Check the terminal before starting another copy.',
     remove: 'Remove command', removeTitle: 'Remove this saved command?', removeText: 'Running processes are unaffected.',
@@ -88,16 +99,17 @@ export const dictionaries = {
     stopped: '服务已停止。', stillRunning: '已请求停止，但仍有进程未退出，请检查终端。',
     replaced: '原服务已停止，但有其他进程正在监听该端口，可能发生了自动重启。',
     cancel: '取消', close: '关闭', dismiss: '关闭提示', protected: '由应用或 macOS 管理',
-    otherUser: '属于其他用户', unverified: '无法验证进程身份', limited: '最多显示 200 个监听进程。', language: 'EN',
-    newTitle: '启动命令', command: '命令', commandHint: '在终端中运行，并保存以便下次使用。', shellHint: '命令通过 /bin/sh 运行。使用其他 Shell 的专有语法时，请明确指定 Shell。', commandActions: '{name} 的操作',
+    otherUser: '属于其他用户', unverified: '无法验证进程身份', limited: '最多显示 200 个监听进程。', language: '语言',
+    newTitle: '启动命令', command: '命令', shellHint: '命令通过 /bin/sh 运行。使用其他 Shell 的专有语法时，请明确指定 Shell。', commandActions: '{name} 的操作',
+    workingDirectory: '工作目录', scriptDetails: '{command} — {name} 的脚本详情',
     chooseScript: '项目脚本', advanced: '更多选项', name: '名称', optional: '选填',
     projectCommands: '项目命令', otherScripts: '其他脚本 · {count}', customCommand: '自定义命令',
-    projectRoot: '项目根目录', runTask: '运行', launchCustom: '保存并启动', working: '正在打开…', reviewTerminal: '待检查终端',
+    runTask: '运行', launchCustom: '保存并启动', working: '正在打开…', reviewTerminal: '待检查终端',
     scriptsFailed: '无法读取项目脚本，仍可输入自定义命令。', retryScripts: '重新读取',
     starterWorkspaceChanged: '工作区已切换。请关闭并重新打开，以使用新工作区的命令。',
     directoryHint: '相对于当前工作区，项目根目录请保留“.”。',
     launch: '启动', launching: '正在启动…', launched: '已在 Muxy 中启动命令，正在检查服务…',
-    savedCommands: '已保存的命令', terminal: '查看终端', saved: '已保存', linked: '已关联终端',
+    savedCommands: '已保存的命令', terminal: '查看终端',
     forget: '解除终端关联', forgetTitle: '解除终端关联？',
     forgetText: '只清除保存的关联。再次启动前，请先检查终端，避免重复运行。',
     remove: '移除命令', removeTitle: '移除这条已保存命令？', removeText: '不会影响正在运行的进程。',

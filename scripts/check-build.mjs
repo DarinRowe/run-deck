@@ -29,7 +29,7 @@ for (const file of files) {
     assert(!text.includes('fakeMuxy'), 'No mock host in production.');
   }
 }
-assert(codeBytes < 100 * 1024, `UI exceeds the 100 KiB budget: ${codeBytes}`);
+assert(codeBytes < 128 * 1024, `UI exceeds the 128 KiB budget (seven complete locale dictionaries): ${codeBytes}`);
 for (const shot of built.muxy.marketplace.screenshots) {
   const data = await readFile(resolve(dist, shot));
   assert.equal(data.toString('hex', 0, 8), '89504e470d0a1a0a');

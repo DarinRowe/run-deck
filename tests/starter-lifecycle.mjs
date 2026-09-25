@@ -18,7 +18,7 @@ async function ready() {
   await waitFor(() => live.getAttribute('aria-pressed') === 'false');
 }
 async function close(dialog) {
-  dialog.querySelector('.form-actions button').click();
+  dialog.querySelector('.starter-close').click();
   await waitFor(() => !dialog.isConnected);
 }
 
@@ -121,7 +121,7 @@ export async function checkStarterLaunch() {
     assert(release, dialog.querySelector('.error').textContent);
     form.requestSubmit();
     const escape = new Event('cancel', { cancelable: true }); dialog.dispatchEvent(escape);
-    dialog.querySelector('.form-actions button').click(); await tick();
+    dialog.querySelector('.starter-close').click(); await tick();
     assert(escape.defaultPrevented && dialog.open, 'Pending launch must prevent dismissal');
     assert(launches === 1, 'Duplicate submission launched twice');
     release(); await waitFor(() => !dialog.isConnected);

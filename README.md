@@ -7,7 +7,7 @@
 
 ![Run Deck showing running services with Open and Stop actions](public/assets/screenshot-dark.png)
 
-*Actual UI with synthetic fixture data and a simulated Muxy interface. [Light theme](public/assets/screenshot-light.png). English and Simplified Chinese are supported.*
+*Actual UI with synthetic fixture data and a simulated Muxy interface. [Light theme](public/assets/screenshot-light.png). English, Simplified Chinese, French, German, Spanish, Brazilian Portuguese, and Korean are supported. Choose a language from the header menu; your choice is remembered.*
 
 ## Everyday use
 
@@ -18,7 +18,7 @@ Open Run Deck to see services listening on TCP ports, including those started ou
 - **Terminal** jumps to the exact terminal for a Run Deck launch. **Restart** stops its verified process tree, checks that it exited, then runs the saved command once in a new terminal. Previous terminal output remains available.
 - **Stop** requests a normal exit for the verified process tree and checks the result. Remaining processes or another listener on the same port are reported explicitly.
 - **Details (···)** reveals the process tree, individual resource values, directory, ports, and a saved launch command when known. Expand **Custom browser address** to specify HTTPS, another port, or a path. **About these readings** explains measurement limits once for the whole view.
-- **Start command** lists the current worktree’s project commands with a **Start** button on each row. `dev`, `start`, and `serve` appear first; build, test, and other scripts stay under **Other scripts**. Each row shows the command, script body, and directory. The root `package.json` supplies scripts; its `packageManager` selects npm, pnpm, Yarn, or Bun, with lockfiles as a fallback. Saved commands remain visible and reuse their terminal association. **Custom command** lets you save and run a command with a name and relative directory. Commands run through `/bin/sh` in a Muxy terminal, including commands that need keyboard input.
+- **Start command** lists the current worktree’s project commands with a **Start** button on each row. `dev`, `start`, and `serve` appear first; build, test, and other scripts stay under **Other scripts**. Each row shows the command to run; expand it to inspect the script body. Non-root directories remain visible. The project path and branch are available under **Working directory**. The root `package.json` supplies scripts; its `packageManager` selects npm, pnpm, Yarn, or Bun, with lockfiles as a fallback. Saved commands remain visible and reuse their terminal association. **Custom command** lets you save and run a command with a name and relative directory. Commands run through `/bin/sh` in a Muxy terminal, including commands that need keyboard input.
 
 **Live · 5s** checks while the panel is visible, with only one inspection in flight. Hide the panel to pause; return to resume. Dialogs and actions also pause the timer. The control lets you disable or resume live checks, and **Refresh** is the single manual check. Worktree changes trigger a fresh check and pause live mode so a different execution host is not polled unexpectedly.
 
@@ -28,14 +28,14 @@ CPU is the recent average reported by macOS `ps` and may exceed 100%. Memory is 
 
 ## Install
 
-Download `run-deck-0.2.0.zip` and `SHA256SUMS` from the [v0.2.0 release](https://github.com/DarinRowe/run-deck/releases/tag/v0.2.0). Verify the download, then extract it:
+Download `run-deck-0.3.0.zip` and `SHA256SUMS` from the [v0.3.0 release](https://github.com/DarinRowe/run-deck/releases/tag/v0.3.0). Verify the download, then extract it:
 
 ```sh
 shasum -a 256 -c SHA256SUMS
-unzip run-deck-0.2.0.zip
+unzip run-deck-0.3.0.zip
 ```
 
-In Muxy, choose **Extensions → Load Unpacked** and select the extracted `run-deck/` folder. The ZIP is an unsigned local installation package; Node is not required to run it. See the [release notes](docs/releases/0.2.0.md) for changes from the v0.1.0 command launchpad.
+In Muxy, choose **Extensions → Load Unpacked** and select the extracted `run-deck/` folder. The ZIP is an unsigned local installation package; Node is not required to run it. See the [release notes](docs/releases/0.3.0.md) for the new languages and dashboard refinements.
 
 ### Build from source
 

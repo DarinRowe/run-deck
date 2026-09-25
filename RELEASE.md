@@ -1,6 +1,6 @@
 # Release workflow
 
-Version 0.2.0 introduces the service dashboard. The earlier `v0.1.0` release contains the command launchpad. English release notes live in `docs/releases/<version>.md`.
+Version 0.3.0 adds seven-language support and dashboard/launch refinements. Version 0.2.0 introduced the service dashboard. The earlier `v0.1.0` release contains the command launchpad. English release notes live in `docs/releases/<version>.md`.
 
 ## Before publishing
 
@@ -26,7 +26,7 @@ Use [Develop and verify in Muxy](docs/MUXY-DEVELOPMENT.md) for the loading workf
 - Verify brief CPU spikes do not warn; sustained resource growth and repeated listener replacement appear inline and in Needs attention.
 - Confirm an outside-project stop can be cancelled and a stale/changed identity cannot be signalled.
 - Check remembered custom addresses, multiport rows, no-listener state, and failed-inspection state.
-- Check English/Chinese, light/dark themes, keyboard dismissal, and a narrow desktop panel.
+- Check all seven languages, light/dark themes, keyboard dismissal, and a narrow desktop panel.
 - Clean up only the disposable test processes, tabs, files, and saved commands created for verification.
 
 ## Marketplace
