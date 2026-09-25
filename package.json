@@ -1,0 +1,101 @@
+{
+  "name": "run-deck",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "A lightweight development launchpad that reuses Muxy terminals.",
+  "author": "DarinRowe",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DarinRowe/run-deck.git"
+  },
+  "homepage": "https://github.com/DarinRowe/run-deck#readme",
+  "bugs": {
+    "url": "https://github.com/DarinRowe/run-deck/issues"
+  },
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  },
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "vite build && node scripts/copy-manifest.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "check": "npm test && npm run build && node scripts/check-build.mjs"
+  },
+  "devDependencies": {
+    "vite": "7.3.6"
+  },
+  "muxy": {
+    "$schema": "https://raw.githubusercontent.com/muxy-app/muxy/main/docs/extensions/schema/manifest.schema.json",
+    "description": "Save project commands, launch Muxy terminals, and inspect ports on demand. No daemon or polling.",
+    "permissions": [
+      "panels:write",
+      "projects:read",
+      "worktrees:read",
+      "tabs:read",
+      "tabs:write",
+      "panes:read",
+      "panes:write",
+      "storage:read",
+      "storage:write",
+      "commands:exec",
+      "files:read",
+      "browser:write"
+    ],
+    "events": [
+      "project.switched",
+      "worktree.switched",
+      "tab.created",
+      "tab.updated",
+      "tab.closed",
+      "pane.created",
+      "pane.closed"
+    ],
+    "panels": [
+      {
+        "id": "launchpad",
+        "title": "Run Deck",
+        "icon": {
+          "symbol": "terminal"
+        },
+        "entry": "panel/index.html",
+        "position": "right",
+        "mode": "pinned"
+      }
+    ],
+    "commands": [
+      {
+        "id": "toggle-launchpad",
+        "title": "Run Deck: Toggle Launchpad",
+        "action": {
+          "kind": "togglePanel",
+          "panel": "launchpad"
+        }
+      }
+    ],
+    "topbarItems": [
+      {
+        "id": "launchpad",
+        "icon": {
+          "symbol": "terminal"
+        },
+        "tooltip": "Run Deck",
+        "command": "toggle-launchpad"
+      }
+    ],
+    "marketplace": {
+      "author": "DarinRowe",
+      "github": "DarinRowe",
+      "categories": [
+        "developer-tools",
+        "productivity"
+      ],
+      "icon": "assets/icon.svg",
+      "screenshots": [
+        "assets/screenshot-dark.png",
+        "assets/screenshot-light.png"
+      ]
+    }
+  }
+}
