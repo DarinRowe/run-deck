@@ -232,7 +232,14 @@ export function stopTreeScript(service, snapshot) {
 ${members.map(p => `${identityCheck(p)}\n[ "$actual" = "$expected" ] || exit 72`).join('\n')}
 ports=$(/usr/sbin/lsof -nP -a -p ${ids.join(',')} -iTCP -sTCP:LISTEN -Fn | /usr/bin/sed -n 's/^n.*://p' | /usr/bin/sort -nu | /usr/bin/tr '\\n' ',')
 [ "$ports" = ${quoteShell(service.ports.map(p => p.port).sort((a,b) => a-b).join(',') + ',')} ] || exit 72
-${members.map(p => `${identityCheck(p)}\nif [ "$actual" = "$expected" ]; then /bin/kill -TERM ${p.pid} || exit 73; elif [ -n "$actual" ]; then exit 72; fi`).join('\n')}
+${members.map(p => `${identityCheck(p)}
+if [ "$actual" = "$expected" ]; then
+  /bin/kill -TERM ${p.pid} || exit 73
+elif [ -n "$actual" ]; then
+  # An earlier TERM may have left a child exited but not yet reaped.
+  state=$(/bin/ps -p ${p.pid} -o stat= | /usr/bin/tr -d '[:space:]')
+  case "$state" in ''|Z*) ;; *) exit 72 ;; esac
+fi`).join('\n')}
 /bin/sleep 0.5
 ${SCAN_SCRIPT}`;
 }

@@ -9,6 +9,50 @@ import { join } from 'node:path';
 import { SCAN_SCRIPT, parseSnapshot, stopTreeScript, launchCommand } from '../src/processes.js';
 
 const exec = promisify(execFile);
+
+test('native macOS: parent shutdown may reap a worker after its identity recheck', { skip: process.platform !== 'darwin', timeout: 15000 }, async () => {
+  const { groupServices } = await import('../src/processes.js');
+  const { quoteShell } = await import('../src/model.js');
+  const token = crypto.randomUUID();
+  const script = `const net=require('node:net'); const {spawn}=require('node:child_process');
+    const worker=spawn(process.execPath,['-e','setInterval(()=>{},1000)'],{stdio:'ignore'});
+    const server=net.createServer();
+    process.on('SIGTERM',()=>{
+      worker.kill('SIGTERM');
+      // Keep the exited worker unreaped through the next ps identity check.
+      const until=Date.now()+300; while(Date.now()<until){}
+      server.close();
+    });
+    server.listen(0,'127.0.0.1',()=>console.log(JSON.stringify({pid:process.pid,worker:worker.pid,port:server.address().port})));`;
+  const child = spawn('/bin/sh', ['-c', launchCommand(`${quoteShell(process.execPath)} -e ${quoteShell(script)}`, token)], { stdio: ['ignore', 'pipe', 'pipe'] });
+  const exited = once(child, 'exit');
+  let info;
+  try {
+    info = await new Promise((resolve, reject) => {
+      let output = '';
+      child.stdout.on('data', chunk => {
+        output += chunk;
+        if (output.includes('\n')) { try { resolve(JSON.parse(output.trim())); } catch (error) { reject(error); } }
+      });
+      child.once('error', reject);
+      child.once('exit', code => { if (!output) reject(new Error(`Launch exited ${code}`)); });
+    });
+    const snapshot = parseSnapshot((await shell(SCAN_SCRIPT)).stdout);
+    const service = groupServices(snapshot, [{ id: 'parent-cleanup', run: { state: 'linked', token } }])
+      .find(item => item.source?.entryId === 'parent-cleanup');
+    assert(service?.members.some(member => member.pid === info.worker));
+    const result = await shell(stopTreeScript(service, snapshot));
+    assert.equal(result.exitCode, 0, `Exited worker must not be treated as a replacement: ${result.stderr}`);
+    assert(!parseSnapshot(result.stdout).processes.some(item => service.members.some(old => old.id === item.id)));
+    await exited;
+  } finally {
+    for (const pid of [info?.worker, info?.pid, child.pid].filter(Boolean)) {
+      try { process.kill(pid, 'SIGTERM'); } catch {}
+    }
+    await exited;
+  }
+});
+
 test('tagged launches preserve stdin for interactive commands', { timeout: 5000 }, async () => {
   const child = spawn('/bin/sh', ['-c', launchCommand('read reply; printf "received:%s" "$reply"', '99999999-9999-4999-8999-999999999999')]);
   const exited = once(child, 'exit');

@@ -43,7 +43,7 @@ Render notifications coalesce per animation frame and stop while hidden. Cards c
 ## Invariants
 
 1. A service is an observed TCP listener tree, not proof of application health or an open terminal.
-2. Stop requires complete verified membership (at most 64 same-owner processes), no protected members, and a complete port set. The shell verifies host, membership, every identity, and ports before signalling, then rechecks each identity immediately before its positive-PID TERM. No process-group signal or force kill exists.
+2. Stop requires complete verified membership (at most 64 same-owner processes), no protected members, and a complete port set. The shell verifies host, membership, every identity, and ports before signalling, then rechecks each identity immediately before its positive-PID TERM. If a previous TERM has already ended a child, a missing or zombie child is skipped without signalling; a changed live identity still aborts. No process-group signal or force kill exists.
 3. Verification distinguishes full exit, an original process remaining, and another listener occupying an affected port. Either of the latter blocks restart.
 4. Restart/Terminal require an exact launch-token association in the current worktree. Restart preflight runs after Muxy's startup consent and cancels if old identities remain or ports are occupied.
 5. URLs allow only HTTP/HTTPS without credentials. Default host mapping requires a remembered user choice; explicit custom addresses are separate.
