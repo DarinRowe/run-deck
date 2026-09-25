@@ -4,6 +4,7 @@ import { spawn, execFile } from 'node:child_process';
 import { once } from 'node:events';
 import { promisify } from 'node:util';
 import { mkdtemp, rm } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { SCAN_SCRIPT, parseSnapshot, stopTreeScript, launchCommand } from '../src/processes.js';
@@ -53,8 +54,9 @@ test('native macOS: parent shutdown may reap a worker after its identity recheck
   }
 });
 
-test('tagged launches preserve stdin for interactive commands', { timeout: 5000 }, async () => {
-  const child = spawn('/bin/sh', ['-c', launchCommand('read reply; printf "received:%s" "$reply"', '99999999-9999-4999-8999-999999999999')]);
+for (const launcher of ['/bin/sh', '/bin/dash']) test(`tagged launches preserve interactive stdin with ${launcher}`, { timeout: 5000, skip: !existsSync(launcher) }, async () => {
+  const command = launchCommand('read reply; printf "received:%s" "$reply"', '99999999-9999-4999-8999-999999999999');
+  const child = spawn('/bin/sh', ['-c', command.replace(/^\/bin\/sh /, `${launcher} `)]);
   const exited = once(child, 'exit');
   child.stdin.end('interactive input\n');
   let output = '';

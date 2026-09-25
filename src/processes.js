@@ -253,9 +253,13 @@ if /usr/sbin/lsof -nP -iTCP:${guard.ports.map(p => p.port).join(',')} -sTCP:LIST
   // A foreground shell gives this launch a stable marker without a daemon,
   // persistent files, or reading process environments. The user command runs
   // unchanged in a child shell; Run Deck's guarded stop handles the full tree.
+  // Save stdin before backgrounding: dash replaces fd 0 before applying the
+  // child's redirections. Close the temporary descriptor in both processes.
   const body = `${preflight}trap 'exit 143' TERM
-/bin/sh -c ${quoteShell(command)} <&0 &
+exec 3<&0
+/bin/sh -c ${quoteShell(command)} <&3 3<&- &
 child=$!
+exec 3<&-
 wait "$child"
 result=$?
 exit "$result"`;
