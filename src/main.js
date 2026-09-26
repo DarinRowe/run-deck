@@ -582,7 +582,7 @@ function openStarter() {
   function setBusy(value) {
     starting = value;
     activeDialog.setAttribute('aria-busy', String(value));
-    for (const control of activeDialog.querySelectorAll('button')) control.disabled = value || !context || scopeLost || control.dataset.blocked === 'true';
+    for (const control of activeDialog.querySelectorAll('button')) control.disabled = value || !context || scopeLost;
     fields.disabled = value || !context || scopeLost;
     close.disabled = value;
   }
@@ -602,10 +602,12 @@ function openStarter() {
     } finally {
       if (trigger) text(trigger, label);
       setBusy(false); lastFocusRefresh = Date.now();
+      if (formError.hidden && trigger?.isConnected) trigger.focus();
     }
   }
   async function start(input) {
-    const result = await commands.start(input, context);
+    const result = await commands.start(input, context, entry =>
+      confirm(t('startAgainTitle', { name: entry.name }), t('startAgainText'), t('startAgain')));
     if (!result) return;
     activeDialog.close();
     if (result.action === 'launch') {
@@ -618,7 +620,8 @@ function openStarter() {
     const copy = el('div', 'command-copy');
     const title = el('div', 'command-title'); title.append(el('strong', '', input.name));
     const state = entry ? terminalState(entry, commands.tabs) : 'ready';
-    if (entry?.run && state !== 'open') title.append(el('span', 'command-tag', t('reviewTerminal')));
+    const needsRecovery = entry?.run && state !== 'open';
+    if (needsRecovery) title.append(el('span', 'command-tag', t(state === 'missing' ? 'missingTerminal' : 'reviewTerminal')));
     copy.append(title);
     if (input.detail) {
       const script = el('details', 'command-script');
@@ -627,9 +630,8 @@ function openStarter() {
       script.append(summary, el('p', 'script-detail muted', input.detail)); copy.append(script);
     } else copy.append(el('code', 'command-line', input.command));
     if (input.directory && input.directory !== '.') copy.append(el('p', 'command-directory muted', `${t('directory')}: ${input.directory}`));
-    const action = button(t(state === 'open' ? 'terminalShort' : input.kind === 'task' ? 'runTask' : 'launch'), () => act(() => start(input), action), primary && state === 'ready' ? 'primary' : '');
+    const action = button(t(state === 'open' ? 'terminalShort' : needsRecovery ? 'startAgain' : input.kind === 'task' ? 'runTask' : 'launch'), () => act(() => start(input), action), primary && state === 'ready' ? 'primary' : '');
     action.setAttribute('aria-label', `${action.textContent} ${input.name}`);
-    if (entry?.run && state !== 'open') { action.dataset.blocked = 'true'; action.disabled = true; }
     const controls = el('div', 'command-actions'); controls.append(action);
     if (entry) {
       const menu = el('details', 'saved-menu'); const summary = el('summary', '', '···');
@@ -644,7 +646,7 @@ function openStarter() {
       menu.append(body); controls.append(menu);
     }
     row.append(copy, controls);
-    if (entry?.run && state !== 'open') row.append(el('p', 'small muted command-review', t('needsReview')));
+    if (needsRecovery) row.append(el('p', 'small muted command-review', t('needsReview')));
     return row;
   }
   function renderChoices() {

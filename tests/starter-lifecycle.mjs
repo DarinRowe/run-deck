@@ -196,10 +196,53 @@ export async function checkStarterUnknownLaunch() {
     const records = [...api.stored.values()].filter(entry => entry.command === command.value);
     assert(launches === 1 && records.length === 1 && records[0].run.state === 'unknown', 'Retry duplicated an uncertain launch');
     const row = [...dialog.querySelectorAll('.command-row')].find(row => row.textContent.includes(command.value));
-    assert(row.querySelector('button').disabled && row.querySelector('.command-review'), 'Uncertain command lacks recovery guidance');
+    assert(!row.querySelector('button').disabled && row.querySelector('button').textContent === 'Start again' && row.querySelector('.command-review'), 'Uncertain command lacks a recovery action');
+    assert(api.calls.some(call => call[0] === 'confirm' && call[1].buttons.includes('Start again')), 'Retry did not require explicit recovery confirmation');
     await close(dialog);
     return { launches, records: records.length, uncertainLaunchBlocked: true };
   } finally { api.tabs.open = open; const dialog = document.querySelector('dialog'); if (dialog) await close(dialog); }
+}
+
+export async function checkStarterRecovery() {
+  await ready();
+  const api = previewApi;
+  const key = 'v1/project-1/tree-1/recovery';
+  const old = { version: 1, id: 'recovery', createdAt: Date.now(), name: 'dev', command: "pnpm run 'dev'", directory: '.', kind: 'service', port: null,
+    run: { state: 'linked', token: crypto.randomUUID(), tabId: 'closed-terminal', requestedAt: Date.now() } };
+  await api.storage.set(key, old);
+  const before = api.calls.filter(call => call[0] === 'open').length;
+  const savedChoice = window.previewChoice;
+  try {
+    document.querySelector('.header .secondary').click();
+    await waitFor(() => document.querySelector('.project-commands .command-review'));
+    const dialog = document.querySelector('dialog');
+    const row = dialog.querySelector('.project-commands .command-row');
+    assert(row.textContent.includes('Previous terminal unavailable'), 'Missing terminal is not explained');
+    const action = row.querySelector('button');
+    assert(!action.disabled && action.textContent === 'Start again', 'Recovery action is unavailable');
+    window.previewChoice = null;
+    action.click();
+    await waitFor(() => api.calls.some(call => call[0] === 'confirm') && !action.disabled);
+    assert(api.calls.filter(call => call[0] === 'open').length === before, 'Cancelling recovery launched a terminal');
+    assert(JSON.stringify(api.stored.get(key)) === JSON.stringify(old), 'Cancelling changed the saved command');
+    assert(document.activeElement === action, 'Cancelling did not return focus to the recovery action');
+    window.previewChoice = 'Start again';
+    action.click(); action.click();
+    await waitFor(() => !dialog.isConnected);
+    assert(api.calls.filter(call => call[0] === 'open').length === before + 1, 'Recovery did not launch exactly once');
+    assert(api.stored.get(key).run.state === 'linked' && api.stored.get(key).run.token !== old.run.token, 'Recovery did not replace the association');
+    await waitFor(() => !document.querySelector('.header .secondary').disabled);
+    document.querySelector('.header .secondary').click();
+    await waitFor(() => document.querySelector('.project-commands .command-row button'));
+    const reopened = document.querySelector('dialog');
+    assert(reopened.querySelector('.project-commands .command-row button').textContent === 'Terminal', 'Recovered command does not navigate to its new terminal');
+    assert(document.querySelector('.live-button').getAttribute('aria-pressed') === 'false', 'Recovery enabled live polling');
+    await close(reopened);
+    return { cancelledWithoutMutation: true, launches: 1, linkedTerminal: true, liveRemainsPaused: true };
+  } finally {
+    window.previewChoice = savedChoice;
+    const dialog = document.querySelector('dialog'); if (dialog) await close(dialog);
+  }
 }
 
 export async function checkStarterWorkspaceChange() {
