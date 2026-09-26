@@ -185,7 +185,7 @@ export class Launchpad {
     });
   }
 
-  async start(input, expected = this.context) {
+  async start(input, expected = this.context, confirmRelaunch) {
     return this.exclusive('starter', async () => {
       const fields = validateEntry(input);
       await this.refresh();
@@ -196,19 +196,44 @@ export class Launchpad {
         return { entry, action: 'terminal' };
       }
       if (!entry) entry = await this.save(fields, null, expected);
-      // launch() preserves uncertain associations and rechecks persisted state.
+      // Recovery is explicit; launch() owns confirmation and association checks.
       await this.assertContext(expected);
-      const launched = await this.launch(entry.id, expected);
+      const launched = await this.launch(entry.id, expected, confirmRelaunch);
       return launched && { entry: launched, action: 'launch' };
     });
   }
 
-  async launch(id, expected = this.context) {
+  async launch(id, expected = this.context, confirmRelaunch) {
     return this.exclusive(id, async () => {
       const context = expected;
+      const version = this.contextVersion;
       await this.assertContext(context);
-      const entry = decodeRecord(await this.api.storage.get(scopeKey(context) + id), id);
-      if (entry.run) throw new Error('This command already has a terminal association. Review or forget it first.');
+      let entry = decodeRecord(await this.api.storage.get(scopeKey(context) + id), id);
+      if (entry.run) {
+        if (!confirmRelaunch || terminalState(entry, this.tabs) === 'open') {
+          throw new Error('This command already has a terminal association. Review or forget it first.');
+        }
+        await this.assertContext(context);
+        if (this.disposed || version !== this.contextVersion) throw new Error('Workspace changed. Refresh Run Deck and try again.');
+        if (!await confirmRelaunch(entry)) return;
+        await this.assertContext(context);
+        const tabs = await this.api.tabs.list();
+        const stored = await this.api.storage.get(scopeKey(context) + id);
+        await this.assertContext(context);
+        if (this.disposed || version !== this.contextVersion) throw new Error('Workspace changed. Refresh Run Deck and try again.');
+        if (!stored) throw new Error('This command was removed. Refresh first.');
+        const current = decodeRecord(stored, id);
+        if (!sameAssociation(current.run, entry.run) || current.command !== entry.command || current.directory !== entry.directory) {
+          throw new Error('Launch association or command changed. Review it before starting again.');
+        }
+        if (terminalState(current, tabs) === 'open') {
+          this.tabs = tabs;
+          throw new Error('The linked terminal is available again. Open it before starting another copy.');
+        }
+        // Replace the old association with opening intent in one write. Never
+        // leave an unassociated record between confirmation and startup.
+        entry = current;
+      }
       return this.openEntry(context, entry);
     });
   }

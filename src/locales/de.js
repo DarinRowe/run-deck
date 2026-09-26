@@ -106,7 +106,11 @@ export default {
   "runTask": "Ausführen",
   "launchCustom": "Speichern und starten",
   "working": "Wird geöffnet…",
-  "reviewTerminal": "Terminal prüfen",
+  "missingTerminal": "Vorheriges Terminal nicht verfügbar",
+  "startAgain": "Erneut starten",
+  "startAgainTitle": "{name} erneut starten?",
+  "startAgainText": "Der vorherige Befehl läuft möglicherweise noch im Hintergrund. Fahre nur fort, wenn eine weitere Instanz sicher gestartet werden kann. Ein neues Terminal wird geöffnet; bestehende Prozesse werden nicht beendet.",
+  "reviewTerminal": "Vorheriger Start unbestätigt",
   "scriptsFailed": "Projektskripte konnten nicht gelesen werden. Sie können einen eigenen Befehl eingeben.",
   "retryScripts": "Erneut suchen",
   "starterWorkspaceChanged": "Der Arbeitsbaum wurde gewechselt. Schließen und öffnen Sie diesen Dialog erneut, um seine Befehle zu verwenden.",
@@ -124,5 +128,5 @@ export default {
   "removeText": "Laufende Prozesse bleiben unverändert.",
   "scriptsUnavailable": "Keine Skripte in der package.json im Projektverzeichnis gefunden. Geben Sie unten einen eigenen Befehl ein.",
   "scriptsLoading": "Projektskripte werden gelesen…",
-  "needsReview": "Prüfen Sie zuerst Muxy. Wenn eine erneute Ausführung sicher ist, lösen Sie die Terminalverknüpfung über das Menü."
+  "needsReview": "Wenn der Befehl beendet ist, wähle „Erneut starten“, um ein neues Terminal zu öffnen."
 };

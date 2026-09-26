@@ -106,7 +106,11 @@ export default {
   "runTask": "실행",
   "launchCustom": "저장 후 시작",
   "working": "여는 중…",
-  "reviewTerminal": "터미널 확인",
+  "missingTerminal": "이전 터미널 사용 불가",
+  "startAgain": "다시 시작",
+  "startAgainTitle": "{name}을(를) 다시 시작할까요?",
+  "startAgainText": "이전 명령이 백그라운드에서 실행 중일 수 있습니다. 새 인스턴스를 시작해도 괜찮은 경우에만 계속하세요. 새 터미널이 열리며 기존 프로세스는 중지되지 않습니다.",
+  "reviewTerminal": "이전 실행 결과 미확인",
   "scriptsFailed": "프로젝트 스크립트를 읽을 수 없습니다. 사용자 지정 명령은 입력할 수 있습니다.",
   "retryScripts": "다시 검색",
   "starterWorkspaceChanged": "작업 트리가 변경되었습니다. 새 작업 트리의 명령을 쓰려면 이 창을 닫고 다시 여세요.",
@@ -124,5 +128,5 @@ export default {
   "removeText": "실행 중인 프로세스에는 영향을 주지 않습니다.",
   "scriptsUnavailable": "루트 package.json에 스크립트가 없습니다. 아래에서 사용자 지정 명령을 입력하세요.",
   "scriptsLoading": "프로젝트 스크립트 읽는 중…",
-  "needsReview": "먼저 Muxy를 확인하세요. 다시 실행해도 안전하다면 메뉴에서 터미널 연결을 해제하세요."
+  "needsReview": "명령이 종료되었다면 «다시 시작»을 눌러 새 터미널에서 실행하세요."
 };

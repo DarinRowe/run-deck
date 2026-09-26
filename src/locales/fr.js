@@ -106,7 +106,11 @@ export default {
   "runTask": "Exécuter",
   "launchCustom": "Enregistrer et lancer",
   "working": "Ouverture…",
-  "reviewTerminal": "Vérifier le terminal",
+  "missingTerminal": "Terminal précédent indisponible",
+  "startAgain": "Relancer",
+  "startAgainTitle": "Relancer {name} ?",
+  "startAgainText": "La commande précédente peut encore tourner en arrière-plan. Continuez uniquement si vous pouvez lancer une autre instance sans risque. Un nouveau terminal sera ouvert ; les processus existants ne seront pas arrêtés.",
+  "reviewTerminal": "Lancement précédent non confirmé",
   "scriptsFailed": "Impossible de lire les scripts du projet. Vous pouvez saisir une commande personnalisée.",
   "retryScripts": "Réessayer la détection",
   "starterWorkspaceChanged": "L’arbre de travail a changé. Fermez puis rouvrez cette fenêtre pour utiliser ses commandes.",
@@ -124,5 +128,5 @@ export default {
   "removeText": "Les processus actifs ne sont pas affectés.",
   "scriptsUnavailable": "Aucun script dans le package.json racine. Saisissez une commande ci-dessous.",
   "scriptsLoading": "Lecture des scripts du projet…",
-  "needsReview": "Vérifiez d’abord Muxy. Si une nouvelle exécution est sûre, dissociez le terminal via le menu."
+  "needsReview": "Si la commande est terminée, choisissez « Relancer » pour ouvrir un nouveau terminal."
 };
